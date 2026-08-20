@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>ユドナリウム派生版・通信方式 調査報告</title>
+  <link rel="stylesheet" href="assets/document.css">
+</head>
+<body>
+<main>
+  <header>
+    <p class="meta">調査開始: 2026-08-19 / 最終更新: 2026-08-20 / 対象: Udonarium Syn</p>
+    <h1>ユドナリウム派生版・通信方式 調査報告</h1>
+    <p class="lead">ユドナリウムリコリス、ユドナリウムPlus、Udonite、本家Udonariumを、機能、改造ベースとしての扱いやすさ、VPS運用、通信安定性の観点で比較した初回調査です。</p>
+  </header>
+
+  <nav aria-label="目次">
+    <h2>目次</h2>
+    <ol class="toc">
+      <li><a href="#summary">要約と暫定判断</a></li>
+      <li><a href="#premise">引き継ぎ資料からの前提</a></li>
+      <li><a href="#comparison">候補比較</a></li>
+      <li><a href="#lycoris">ユドナリウムリコリス</a></li>
+      <li><a href="#plus">ユドナリウムPlus</a></li>
+      <li><a href="#udonite">Udonite</a></li>
+      <li><a href="#network">通信安定化の考え方</a></li>
+      <li><a href="#code-review">リコリスのコード確認</a></li>
+      <li><a href="#recommendation">推奨方針</a></li>
+      <li><a href="#next">次の調査・検証</a></li>
+      <li><a href="#sources">一次情報</a></li>
+    </ol>
+  </nav>
+
+  <section id="summary">
+    <h2>要約と暫定判断</h2>
+    <div class="decision">
+      <strong>暫定の第一候補:</strong> ユドナリウムリコリス<br>
+      <strong>位置づけ:</strong> 採用確定ではなく、コード監査・ビルド・互換性・負荷試験へ進める第一候補<br>
+      <strong>通信の努力目標:</strong> リコリスのWebSocket Relayを活用し、P2P固有の接続失敗を減らす<br>
+      <strong>参考候補:</strong> Plusは機能選択UI、UdoniteはClient/Server化の設計を参考にする
+    </div>
+    <p>リコリスは照明、戦闘管理、VNモード、ジュークボックス等の多機能さに加え、2026年7月以降に通信基盤を大きく改修しています。WebSocket Relay、サーバー保存、再接続、接続品質表示、画像・音声のサーバー配信を既に備えるため、今回の目的と最も一致します。</p>
+    <p>ただし、開発の新しさは利点であると同時にリスクです。公開リポジトリの最新確認コミットは2026-08-03のv1.67.0で、公式サイトの更新履歴v1.66より先行していました。通信サーバーは機能豊富ですが、認証、権限制御、レート制限、状態保存の堅牢性は本番利用前に補強が必要です。</p>
+    <div class="warning"><strong>重要:</strong> 旧引き継ぎ資料の「本家をベースに確定」という結論は、当時の「ダークモードと読み上げだけを小さく追加する」前提に基づきます。多機能版と通信安定化を重視する今回の方針では、ベース選定を再度開いて比較する必要があります。</div>
+  </section>
+
+  <section id="premise">
+    <h2>引き継ぎ資料からの前提</h2>
+    <ul>
+      <li>公開予定は <code>https://udonarium.synwork.work/</code>。</li>
+      <li>仲間内向けだがインターネットから接続可能。検索非掲載だけに頼らず、入口に認証を置く。</li>
+      <li>アプリのソースは本プロジェクト、Compose・Caddy・秘密情報は<code>VPS_Synwork</code>で管理する。</li>
+      <li>ダークモードとブラウザ内チャット読み上げは引き続き要件候補。</li>
+      <li>VPSはMinecraft等と共用するため、CPU、メモリ、ディスク、転送量に上限と監視が必要。</li>
+      <li>通信安定化は努力目標だが、リコリス採用時は主要な採用理由になり得る。</li>
+    </ul>
+  </section>
+
+  <section id="comparison">
+    <h2>候補比較</h2>
+    <table>
+      <thead>
+        <tr><th>候補</th><th>主な性格</th><th>通信</th><th>保守・権利</th><th>現時点の位置づけ</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>本家Udonarium</td>
+          <td>構成が比較的小さく、上流追従とPull Requestに向く。</td>
+          <td>WebRTC + SkyWay 2023。バックエンドは主に認証トークン発行。</td>
+          <td>MIT。公式更新経路が明確。</td>
+          <td>最小改造なら最良。多機能化と通信改善は自前実装量が多い。</td>
+        </tr>
+        <tr>
+          <td><strong>リコリス</strong></td>
+          <td>照明、戦闘管理、VN、音楽、ホットバー等を備える大規模派生。</td>
+          <td>SkyWay、WebSocket Signaling、WebSocket Relayを実装。Relayでは状態・メディアをサーバー保存。</td>
+          <td>MIT表記。更新は活発。ただし新規サーバーコードの監査が必要。</td>
+          <td><span class="status-good">暫定第一候補</span>。実測と補強を前提に検証する。</td>
+        </tr>
+        <tr>
+          <td>Plus</td>
+          <td>リリィとWith Fly系の機能を画面で選択して利用する構成。</td>
+          <td>通信レイヤー刷新の根拠は確認できず。本家系WebRTC/SkyWayを引き継ぐ可能性が高い。</td>
+          <td>Plus固有ソースとライセンスを特定できず。</td>
+          <td><span class="status-caution">機能・UIの参考</span>。現状はベース不適。</td>
+        </tr>
+        <tr>
+          <td>Udonite</td>
+          <td>非P2PのClient/Server方式。部屋状態をサーバーへ保存。</td>
+          <td>Socket.IO + Node.js + MongoDB + Web/オブジェクトストレージ。</td>
+          <td>Client/Server/ContainerはMIT。主要資料は2022年世代。</td>
+          <td><span class="status-caution">設計参考</span>。古さと運用負担から第一候補にはしない。</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="lycoris">
+    <h2>ユドナリウムリコリス</h2>
+    <h3>確認できた機能</h3>
+    <ul>
+      <li>イニシアチブ・戦闘管理、ラウンドトラッカー、計算式、GM秘密管理</li>
+      <li>照明、光源、壁による遮光、レーザー</li>
+      <li>VNモード、立ち絵、表情切替、吹き出し</li>
+      <li>ジュークボックス、BGM・SE・環境音</li>
+      <li>ダイスカットイン、ホットバー、所有権・視界管理、インベントリソート</li>
+      <li>Dockerによる自前設置、サーバー側の部屋・画像・音声保存</li>
+    </ul>
+
+    <h3>通信面の特徴</h3>
+    <p>公式更新履歴v1.66では、従来のSkyWay P2Pに加えてWebSocket Relayを既定化したと説明されています。NAT、モバイル回線、ファイアウォールによる孤立を避ける狙いで、再接続、タイムアウト、接続品質表示、サーバー状態表示、ZIP一括同期も追加されています。</p>
+    <p>コード上のRelayは単なる転送だけではありません。ルームイベントとスナップショットをファイルへ保存し、再接続・後入りの参加者へ再送します。画像と音声もハッシュ単位で保存し、入室時にZIPでまとめて取得します。</p>
+
+    <h3>注意点</h3>
+    <ul>
+      <li>公式サイトはv1.66までですが、リポジトリはv1.67.0まで進んでおり、文書と実装に差があります。</li>
+      <li>公式サイトはRelayを既定と説明しますが、v1.67.0のソース側<code>config.yaml</code>は<code>skyway2023</code>のままでした。配布物・公開サーバー・ソースの既定値を分けて確認する必要があります。</li>
+      <li>Angular 13 / TypeScript 4.6系であり、長期運用では依存更新計画が必要です。</li>
+      <li>本家や他派生版とのセーブZIP完全互換は明記されていません。実データで往復試験が必要です。</li>
+    </ul>
+  </section>
+
+  <section id="plus">
+    <h2>ユドナリウムPlus</h2>
+    <p>Plusは固定された一つの完成版というより、必要な機能を設定画面で選ぶランチャー／カスタム構成に近いものです。リリィとUdonarium with Flyを改造した旨が公式設定ページに記載されています。</p>
+    <h3>参考になる機能</h3>
+    <ul>
+      <li>2D表示、回転無効、ショートカット、カードタップ、重ねカード移動、手札置き場</li>
+      <li>立ち絵、カットイン、バフ、ダイス表、画像タグ、どどんとふ風HTMLログ</li>
+      <li>Googleスプレッドシートへのログ保存と、シートからのカードデッキ生成</li>
+      <li>必要な機能だけを選び、利用者が画面から構成を調整する考え方</li>
+    </ul>
+    <div class="warning">Plus固有の公式GitHub、追加コードのライセンス、更新履歴を今回の調査では特定できませんでした。ベースの一部がMITでも、Plus全体の再利用条件が自動的にMITになるとは判断できません。</div>
+    <p>通信改善を目的とした派生版である根拠も確認できません。したがって、Plusそのものをフォークするより、機能選択の設計や個別機能を参考にするのが安全です。</p>
+  </section>
+
+  <section id="udonite">
+    <h2>Udonite</h2>
+    <p>Udoniteは、P2Pをやめてサーバー・クライアント方式に切り替えたことを公式READMEで明示しています。ゲーム状態はサーバーに保存され、音楽以外は次回へ持ち越せます。</p>
+    <h3>構成</h3>
+    <pre><code>ブラウザ
+   │ HTTPS / Socket.IO
+   ▼
+Udonite Server（Node.js）
+   ├── MongoDB：ルーム・ゲーム状態
+   └── Webサーバー／オブジェクトストレージ：画像・音楽</code></pre>
+    <ul>
+      <li>Node.jsは開発時v16.13、MongoDBは開発時v5.0.5。</li>
+      <li>画像・音楽保存、最大ルーム数、管理パスワード等のサーバー設定を持つ。</li>
+      <li>2D/3D切替、立ち絵、権限、秘匿情報、ラウンド管理、リソース管理等を備える。</li>
+      <li>Client、Server、コンテナ化支援が別リポジトリに分かれる。</li>
+    </ul>
+    <p>通信方式は今回の問題意識に合いますが、資料と主要リリースは2022年世代で、現行Node.js・MongoDB・ブラウザへの追従には相当の保守が必要と見込まれます。また、他派生版とのチャットデータ非互換が紹介ページに明記されています。</p>
+  </section>
+
+  <section id="network">
+    <h2>通信安定化の考え方</h2>
+    <h3>本家P2P</h3>
+    <pre><code>ブラウザA ── WebRTC / SkyWay ── ブラウザB
+      └── バックエンドは主にSkyWayトークン発行</code></pre>
+    <p>軽量ですが、VPSの性能を上げてもNAT、企業・学校ネットワーク、モバイル回線、TURN、参加者回線の問題は直接解決しません。</p>
+
+    <h3>リコリスRelay</h3>
+    <pre><code>ブラウザA ── WebSocket ── リコリスサーバー ── WebSocket ── ブラウザB
+                              ├── イベント・スナップショット
+                              └── 画像・音声</code></pre>
+    <p>NAT越えの難しさを通常のHTTPS/WSS接続へ寄せられます。一方、全通信がVPSへ集まるため、帯域、メモリ、イベントループ停止、ディスク容量、障害時の影響が増えます。</p>
+
+    <h3>現実的な段階</h3>
+    <ol>
+      <li><strong>低コスト:</strong> HTTPS、ヘルスチェック、再接続、タイムアウト、接続品質表示、メディアHTTP配信を確認する。</li>
+      <li><strong>中コスト:</strong> WebSocket Relayを採用し、接続数・メッセージ量・帯域・保存容量の制限と監視を加える。</li>
+      <li><strong>根本改修:</strong> サーバー権威型にし、認証、権限、ACK、再送、冪等性、イベントログ、世代付きスナップショットを設計する。</li>
+    </ol>
+  </section>
+
+  <section id="code-review">
+    <h2>リコリスのコード確認</h2>
+    <p>公開リポジトリv1.67.0（コミット<code>266f112</code>、2026-08-03）を対象に、通信・サーバー・Docker周辺を読みました。以下は採用前に扱うべき技術課題です。</p>
+    <table>
+      <thead><tr><th>項目</th><th>確認内容</th><th>判断</th></tr></thead>
+      <tbody>
+        <tr><td>状態保存</td><td>イベントとクライアント生成スナップショットをJSONファイルへ保存。既定では空室を24時間で削除。</td><td>再接続には有効。永続卓として使うなら保持期間、バックアップ、原子的復旧を設計する。</td></tr>
+        <tr><td>スナップショット</td><td>クライアントから受け取り、オブジェクト数が15%以上減る場合だけ拒否する保護がある。</td><td>破損対策としては限定的。世代管理と検証、直前版保持が欲しい。</td></tr>
+        <tr><td>認証・部屋権限</td><td>WebSocket登録とメディアAPIには独立したユーザー認証・ルーム認可が見当たらない。</td><td>共有Basic認証は必須。将来はルーム単位トークンを追加する。</td></tr>
+        <tr><td>状態API</td><td><code>/api/status</code>が部屋キー、接続数、スナップショット情報、メモリ等を返す。</td><td>公開範囲を最小化し、Caddyまたはアプリ側で管理者だけに制限する。</td></tr>
+        <tr><td>メディア</td><td>1ファイル既定100MB、総量既定20GB。ハッシュ検証はあるが、アップロード認証・レート制限は見当たらない。</td><td>認証、MIME実体検査、部屋別上限、レート制限、期限、バックアップが必要。</td></tr>
+        <tr><td>WebSocket上限</td><td>1メッセージ既定64MB。接続数や送信頻度の明確な上限は見当たらない。</td><td>大部屋対応には有効だが、メモリ枯渇対策が必要。</td></tr>
+        <tr><td>処理方式</td><td>JSON直列化や一部ファイル保存に同期処理を使用。</td><td>仲間内の小規模利用では許容可能性あり。負荷試験でイベントループ遅延を測る。</td></tr>
+        <tr><td>Docker</td><td>Node 22ランタイム、データ・音声ライブラリ用Volume、12081番を公開。</td><td>Caddy配下の内部ポートとして使いやすい。リソース上限と非root化を検討する。</td></tr>
+        <tr><td>リポジトリ衛生</td><td><code>signaling-server/node_modules</code>、バックアップ群、鍵らしきバックアップ名が追跡対象に含まれる。</td><td>由来・有効性を確認し、採用フォークでは不要物を除去する。実鍵なら失効・再発行が必要。</td></tr>
+        <tr><td>自動テスト</td><td>多数のAngular specとCypress構成はあるが、GitHub Actionsのワークフローは確認できない。</td><td>テストが実際に通るかを基準環境で確認し、CIを追加する。</td></tr>
+      </tbody>
+    </table>
+    <p class="meta">「見当たらない」は今回確認した公開コード範囲での結果です。リバースプロキシ等の外部設定で補っている可能性はあります。</p>
+  </section>
+
+  <section id="recommendation">
+    <h2>推奨方針</h2>
+    <ol>
+      <li>リコリスを第一候補として、まず無改造版を隔離したローカル環境で再現する。</li>
+      <li>本家ベース案は捨てず、比較対照として残す。リコリスの保守負担が許容できない場合の安全な戻り先にする。</li>
+      <li>Plusは機能一覧と選択UIを要件整理に使い、ソース・ライセンスが明らかになるまでコードを取り込まない。</li>
+      <li>UdoniteはSocket.IO、永続化、画像分離の設計を参考にするが、直接ベースにはしない。</li>
+      <li>通信改善は「新方式をゼロから作る」のではなく、まずリコリスRelayを安全に運用できる形へ補強する。</li>
+    </ol>
+    <div class="decision"><strong>採用確定条件:</strong> ビルド成功、主要操作成功、既存ZIP互換、2～4人の別回線接続、再接続・長時間接続、VPS負荷、保存・復旧、セキュリティ最低要件を満たした時点でリコリス採用を確定します。</div>
+  </section>
+
+  <section id="next">
+    <h2>次の調査・検証</h2>
+    <ol>
+      <li>リコリスv1.67.0を固定し、依存導入・テスト・本番ビルドを実行する。</li>
+      <li>Dockerをローカルで起動し、Relayで2ブラウザ接続、部屋再入室、サーバー再起動後の復旧を確認する。</li>
+      <li>本家・リリィ・リコリスのサンプルZIPを相互に読み込み、基本データと独自データを表にする。</li>
+      <li>Chrome/Firefox、通常回線/テザリング等でP2PとRelayを比較する。</li>
+      <li>大きな画像、音声、500～2000オブジェクト、連続操作でCPU・メモリ・帯域・保存時間を測る。</li>
+      <li>認証、ルーム認可、API公開範囲、レート制限、バックアップ、ログの修正案を作る。</li>
+      <li>ダークモードと読み上げが既存UI・チャット処理へ追加可能か、リコリス上で差分設計する。</li>
+    </ol>
+  </section>
+
+  <section id="sources">
+    <h2>一次情報</h2>
+    <ul>
+      <li><a href="https://github.com/TK11235/udonarium">本家Udonarium</a> / <a href="https://github.com/TK11235/udonarium/releases">Releases</a></li>
+      <li><a href="https://github.com/oron1208/udonarium-lycoris">Udonarium Lycoris GitHub</a> / <a href="https://udonarium-lycoris.ddns.net/docs/">公式ドキュメント・更新履歴</a></li>
+      <li><a href="https://create-now.vercel.app/tyrano/udon-lily">ユドナリウムPlus設定ページ</a></li>
+      <li><a href="https://github.com/NanasuNANA/UdonariumWithFly">Udonarium with Fly</a></li>
+      <li><a href="https://github.com/Mafty-Hs/Udonite">Udonite Client</a> / <a href="https://github.com/Mafty-Hs/Udonite-Server">Udonite Server</a></li>
+      <li><a href="https://github.com/h-mikisato/udonite-container">Udonite Container</a></li>
+      <li><a href="https://onlinesession.app/udonite/">Udonite紹介・公開ページ</a></li>
+    </ul>
+    <p class="meta">公式情報で明示された事実と、構成からの技術的推論を分けて記載しました。性能と互換性は未実測のため、次段階で検証します。</p>
+  </section>
+</main>
+</body>
+</html>

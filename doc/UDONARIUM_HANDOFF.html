@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Udonarium_syn プロジェクト引き継ぎ</title>
+  <link rel="stylesheet" href="assets/document.css">
+</head>
+<body>
+<main>
+  <header>
+    <p class="meta">引き継ぎ作成日: 2026-08-19 / 引き継ぎ元: VPS_Synwork</p>
+    <h1>Udonarium_syn プロジェクト引き継ぎ</h1>
+    <p class="lead">この資料は、改造ユドナリウムの開発を別プロジェクト <code>D:\Projects\Synchro\2026\Udonarium_syn</code> で開始する担当者・Codexタスク向けです。調査をやり直さず、現状確認から実装へ進むために使用します。</p>
+  </header>
+
+  <div class="decision">
+    <strong>2026-08-20 方針更新:</strong> 改造ベースはUdonarium Lycoris v1.67.0へ変更しました。ユーザーフォーク作成、ローカル本番ビルド、統合サーバー、WebSocketリレーの2クライアント中継まで確認済みです。
+    最新の作業状態は<a href="LOCAL_VALIDATION_2026-08-20.html">ローカル基準検証</a>、比較根拠は<a href="UDONARIUM_VARIANT_RESEARCH.html">派生版・通信方式 調査報告</a>を参照してください。以下に残る「本家をベース」とする旧記述より、この方針更新を優先します。
+  </div>
+
+  <nav aria-label="目次">
+    <h2>目次</h2>
+    <ol class="toc">
+      <li><a href="#objective">目的と確定事項</a></li>
+      <li><a href="#boundaries">リポジトリの責務境界</a></li>
+      <li><a href="#baseline">調査済みの基準情報</a></li>
+      <li><a href="#bootstrap">最初の作業</a></li>
+      <li><a href="#dark-mode">ダークモード要件</a></li>
+      <li><a href="#speech">チャット読み上げ要件</a></li>
+      <li><a href="#testing">テストと受け入れ条件</a></li>
+      <li><a href="#handoff-back">VPS側へ返す情報</a></li>
+      <li><a href="#pending">保留事項</a></li>
+      <li><a href="#prompt">新規タスク用の開始指示</a></li>
+    </ol>
+  </nav>
+
+  <section id="objective">
+    <h2>目的と確定事項</h2>
+    <div class="decision">
+      <strong>目的:</strong> Udonarium Lycorisを基準に、ダークモードとチャット自動読み上げを追加した仲間内向け派生版を作る。<br>
+      <strong>開発場所:</strong> <code>D:\Projects\Synchro\2026\Udonarium_syn</code><br>
+      <strong>公開予定:</strong> <code>https://udonarium.synwork.work/</code><br>
+      <strong>公開範囲:</strong> インターネットから接続可能だが、検索登録・宣伝は行わない。
+    </div>
+    <ul>
+      <li>改造ベースは <a href="https://github.com/oron1208/udonarium-lycoris">oron1208/udonarium-lycoris</a> とします。</li>
+      <li>ユーザーフォーク <a href="https://github.com/synchro4351/udonarium-lycoris">synchro4351/udonarium-lycoris</a> を使用します。</li>
+      <li>ダークモードは、条件が整えば本家へPull Requestを出せる独立差分にします。</li>
+      <li>チャット読み上げは、まず派生版限定で実装・評価します。</li>
+      <li>初期版の読み上げはブラウザ内の<code>speechSynthesis</code>を使い、VOICEVOXは導入しません。</li>
+      <li>本家の既存機能と見た目を必要以上に変更しません。</li>
+    </ul>
+  </section>
+
+  <section id="boundaries">
+    <h2>リポジトリの責務境界</h2>
+    <table>
+      <thead><tr><th>リポジトリ</th><th>担当するもの</th><th>担当しないもの</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>Udonarium_syn</code></td>
+          <td>Angular/TypeScriptソース、CSS、単体・画面テスト、開発文書、ビルド定義、必要ならDockerfile</td>
+          <td>VPSの実APIキー、Caddy全体設定、他サービスのCompose、VPS実データ</td>
+        </tr>
+        <tr>
+          <td><code>VPS_Synwork</code></td>
+          <td>本番Compose、Caddy、サブドメイン、秘密情報のキー名テンプレート、配備・復旧手順</td>
+          <td>Udonarium本体の機能コード、node_modules、ビルド途中の成果物</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Udonarium側で本番配備可能になった時点で、イメージタグまたはビルド方法、内部ポート、ヘルスチェック、必要な環境変数名をVPS側へ引き渡します。VPS用ComposeをUdonariumソースへコピーしません。</p>
+  </section>
+
+  <section id="baseline">
+    <h2>調査済みの基準情報</h2>
+    <h3>本家と既存フォーク</h3>
+    <ul>
+      <li>2026-08-19確認時、本家の最新Releaseは<code>v1.17.4</code>、<code>master</code>は<code>bf11844</code>でした。</li>
+      <li>同日時点で、ユーザーフォークの<code>master</code>は<code>3295dbd</code>でした。</li>
+      <li>本家はTypeScript + Angularで、MITライセンスです。</li>
+      <li>現行本家はHTTPS、SkyWay 2023、別配置のUdonariumバックエンドを前提とします。</li>
+      <li>本家READMEはIssueとPull Requestを受け付けています。</li>
+    </ul>
+    <div class="warning"><strong>開始時に必ず再確認:</strong> 上記バージョンとコミットは引き継ぎ作成時点の値です。新規プロジェクト開始時の本家最新Release、既定ブランチ、Node.js・Angular要件を公式リポジトリで確認してください。</div>
+
+    <h3>派生版の調査結果</h3>
+    <table>
+      <thead><tr><th>候補</th><th>判断</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://github.com/entyu/udonarium_lily">Udonarium Lily</a></td><td>立ち絵・ログ・発言色等の実装参考。ただし本家現行版より世代が古いためベースにはしない。</td></tr>
+        <tr><td><a href="https://github.com/oron1208/udonarium-lycoris">Udonarium Lycoris</a></td><td>機能豊富で更新実績もあるが、今回の2機能に対して差分が大きいためベースにはしない。</td></tr>
+        <tr><td><a href="https://nanasunana.github.io/">Udonarium with Fly 公開版</a></td><td>本家v1.17.4ベースの表示は確認したが、対応する正式ソースとライセンスを特定できなかったため採用しない。</td></tr>
+      </tbody>
+    </table>
+    <p>調査した公式README、Releases、公開ソースでは、ユーザー向けダークモード切替を確認できませんでした。ただし「存在しない」と断定せず、実装開始時に本家ソースを検索してください。</p>
+
+    <h3>詳細設計への参照</h3>
+    <p>引き継ぎ元には、背景調査とVPS構成を含む <a href="../../VPS_Synwork/doc/UDONARIUM_PLAN.html">Udonarium Syn 開発・配備計画</a>、共通ルールを記載した <a href="../../VPS_Synwork/doc/OPERATIONS_LAYOUT.html">VPS・ローカル配置規則</a> があります。</p>
+  </section>
+
+  <section id="bootstrap">
+    <h2>最初の作業</h2>
+    <p>既存フォークの<code>master</code>は履歴として保存し、本家最新から新しい運用ブランチを作ります。既存ブランチへのforce pushやhard resetは、明示的な合意なしに行いません。</p>
+    <ol>
+      <li><code>Udonarium_syn</code>フォルダが存在するか確認し、既存ファイルがあれば内容とGit状態を先に調べます。</li>
+      <li>空または未作成なら、ユーザーの既存フォークをcloneします。</li>
+      <li><code>origin</code>をユーザーフォーク、<code>upstream</code>を本家に設定します。</li>
+      <li>本家の最新Release、既定ブランチ、必要なNode.jsバージョンを再確認します。</li>
+      <li>本家最新の既定ブランチから<code>syn/main</code>を作成し、originへpushします。</li>
+      <li>本家無改造の状態で依存導入、ビルド、テスト、HTTPSローカル起動を行います。</li>
+      <li>無改造版の主要操作を確認してから、機能ブランチを作ります。</li>
+    </ol>
+
+    <h3>想定コマンド</h3>
+    <p>本家の既定ブランチが引き続き<code>master</code>だった場合の例です。実行前にフォルダ状態とブランチ名を確認してください。</p>
+    <pre><code>git clone git@github.com:synchro4351/udonarium.git Udonarium_syn
+cd Udonarium_syn
+git remote add upstream https://github.com/TK11235/udonarium.git
+git fetch upstream --tags
+git switch -c syn/main upstream/master
+git push -u origin syn/main</code></pre>
+    <p>GitHub側で<code>syn/main</code>を既定ブランチに変更します。既存<code>master</code>は当面削除しません。</p>
+
+    <h3>ブランチ</h3>
+    <table>
+      <thead><tr><th>ブランチ</th><th>目的</th></tr></thead>
+      <tbody>
+        <tr><td><code>syn/main</code></td><td>VPSへ配備可能な統合版</td></tr>
+        <tr><td><code>feature/dark-mode</code></td><td>本家PRを検討できる汎用ダークモード</td></tr>
+        <tr><td><code>feature/chat-speech</code></td><td>フォーク限定で先行検証する読み上げ</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="dark-mode">
+    <h2>ダークモード要件</h2>
+    <h3>機能要件</h3>
+    <ul>
+      <li><code>system</code>、<code>light</code>、<code>dark</code>の3モードを用意します。</li>
+      <li>初期値は<code>system</code>とし、<code>prefers-color-scheme</code>へ追従します。</li>
+      <li>選択値は各ブラウザへ保存し、他の参加者やルームへ同期しません。</li>
+      <li>テーマ切替は既存の設定UIに合わせ、アイコンとラベルで明確に操作できるようにします。</li>
+      <li>初回描画前にテーマを確定し、ライト画面が一瞬表示される現象を避けます。</li>
+    </ul>
+
+    <h3>実装方針</h3>
+    <ul>
+      <li>背景、文字、境界、選択、警告、フォーカス等を意味別のCSSカスタムプロパティへ集約します。</li>
+      <li>マップ、コマ、カード、アップロード画像そのものへ色フィルターをかけません。</li>
+      <li>既定のライトテーマを意図せず変えません。</li>
+      <li>色をコンポーネントごとに場当たり的に上書きせず、既存スタイル構造を調査してから変更します。</li>
+    </ul>
+
+    <h3>上流PRの条件</h3>
+    <ul>
+      <li>TTS、Synwork固有名、VPS設定を含めない独立差分にします。</li>
+      <li>本家最新の既定ブランチから作ったブランチで提出します。</li>
+      <li>ライト・ダーク双方のスクリーンショット、テスト結果、設定保持方法をPRへ記載します。</li>
+      <li>変更範囲が大きくなる場合は、先にIssueでテーマ設計の方針を確認します。</li>
+    </ul>
+  </section>
+
+  <section id="speech">
+    <h2>チャット読み上げ要件</h2>
+    <div class="decision"><strong>初期構成:</strong> チャットを受信した各ブラウザが、Web Speech APIの<code>window.speechSynthesis</code>を使ってローカルで読み上げます。VPS側の音声合成サービスは作りません。</div>
+
+    <h3>初期仕様</h3>
+    <table>
+      <thead><tr><th>項目</th><th>要件</th></tr></thead>
+      <tbody>
+        <tr><td>開始</td><td>ブラウザの自動再生制限を考慮し、ユーザーが一度「読み上げ開始」を押す。</td></tr>
+        <tr><td>設定</td><td>ON/OFF、日本語音声、速度、ピッチ、音量、発言者名の有無をローカル保存。</td></tr>
+        <tr><td>対象</td><td>有効化後に受信した通常チャット。過去ログは読み上げない。</td></tr>
+        <tr><td>自分の発言</td><td>初期値は読み上げない。設定変更は可能。</td></tr>
+        <tr><td>秘話・システム発言</td><td>初期値は読み上げない。秘話の宛先情報を崩さない。</td></tr>
+        <tr><td>ダイス結果</td><td>独立トグル。長い結果を無制限に読み上げない。</td></tr>
+        <tr><td>本文制限</td><td>初期値200文字。HTML、URL、装飾、制御文字を読み上げ用に整形。</td></tr>
+        <tr><td>キュー</td><td>初期値5件。上限時は古い未再生発話を破棄し、遅延を蓄積させない。</td></tr>
+      </tbody>
+    </table>
+
+    <h3>実装上の注意</h3>
+    <ul>
+      <li><code>speechSynthesis.getVoices()</code>が初回に空の場合を考慮し、<code>voiceschanged</code>を処理します。</li>
+      <li>日本語音声が存在しない場合、無言で失敗せず設定画面へ案内します。</li>
+      <li>チャットの表示処理へ直接音声ロジックを詰め込まず、対象判定・本文整形・キュー管理をサービスとして分離します。</li>
+      <li>同じチャットイベントの再受信・再描画による二重読み上げを、メッセージID等で防止します。</li>
+      <li>画面を閉じる時、ルーム退出時、読み上げOFF時には<code>speechSynthesis.cancel()</code>でキューを止めます。</li>
+    </ul>
+
+    <h3>VOICEVOXについて</h3>
+    <p>音質や話者を全員で統一したいという評価結果が出た場合だけ、第2段階として検討します。VOICEVOX ENGINEを外部公開せず、入力制限・レート制限・キャッシュを行うTTS gatewayを介します。6GB VPSでMinecraftとCPU・メモリを競合させるため、実測なしに導入しません。</p>
+  </section>
+
+  <section id="testing">
+    <h2>テストと受け入れ条件</h2>
+    <h3>基準版</h3>
+    <ul>
+      <li>依存導入、既存テスト、本番ビルドが成功します。</li>
+      <li>HTTPSローカル環境でルーム作成・参加、チャット、ダイス、画像、セーブデータの基本操作を確認します。</li>
+      <li>基準版の失敗を改造機能の問題として扱わず、最初に記録します。</li>
+    </ul>
+
+    <h3>ダークモード</h3>
+    <ul>
+      <li>ライト、ダーク、OS設定追従が再読み込み後も正しく動きます。</li>
+      <li>主要パネル、ダイアログ、チャット、入力欄、コンテキストメニュー、選択・フォーカス状態を確認します。</li>
+      <li>通常文字と操作状態のコントラストが不足せず、マップやコマの色が変わりません。</li>
+      <li>デスクトップ幅とモバイル相当幅で、文字や操作要素が重なりません。</li>
+    </ul>
+
+    <h3>読み上げ</h3>
+    <ul>
+      <li>本家推奨のデスクトップChromeとFirefoxを最低対象にします。</li>
+      <li>通常発言、自分の発言、他人の発言、秘話、システム発言、ダイス結果、長文、URLを含む発言を試します。</li>
+      <li>連続投稿時にキューが無制限に伸びず、OFF・退出・再接続で正しく停止します。</li>
+      <li>同じ発言を二重に読み上げません。</li>
+      <li>日本語音声がない環境で、操作可能なエラー案内を表示します。</li>
+    </ul>
+  </section>
+
+  <section id="handoff-back">
+    <h2>VPS側へ返す情報</h2>
+    <p>ローカル実装が本番配備可能になったら、<code>VPS_Synwork</code>へ次を返します。</p>
+    <table>
+      <thead><tr><th>情報</th><th>必要な内容</th></tr></thead>
+      <tbody>
+        <tr><td>リリース識別子</td><td>Gitタグ、コミットID、コンテナイメージ名と固定タグ</td></tr>
+        <tr><td>起動方法</td><td>Dockerfileまたは静的成果物の作成コマンド、起動コマンド</td></tr>
+        <tr><td>ネットワーク</td><td>内部待受ポート、ベースパス、WebSocket等の要否</td></tr>
+        <tr><td>ヘルスチェック</td><td>HTTPパス、正常応答条件、起動猶予時間</td></tr>
+        <tr><td>環境変数</td><td>変数名、必須・任意、秘密情報かどうか。実値は渡さない。</td></tr>
+        <tr><td>永続データ</td><td>必要なマウント先。不要なら明記。</td></tr>
+        <tr><td>リソース</td><td>アイドル時・利用時・ビルド時のCPUとメモリ実測</td></tr>
+        <tr><td>互換性</td><td>確認済みブラウザ、本家セーブデータとの互換性</td></tr>
+        <tr><td>復旧</td><td>直前版へ戻す方法と、戻しても保持されるデータ</td></tr>
+      </tbody>
+    </table>
+    <p>本番側では、Caddyから<code>udonarium-web</code>、Udonariumバックエンド、既存BCDiceへ接続する予定です。公開ポートは原則80/443だけとし、個別コンテナのポートはDocker内部ネットワークに限定します。</p>
+  </section>
+
+  <section id="pending">
+    <h2>保留事項</h2>
+    <p>以下は実装開始を妨げないため、合理的な初期値で進め、試用後に決めます。</p>
+    <ul>
+      <li>画面上の正式名称を「Udonarium Syn」とするか。</li>
+      <li>読み上げで発言者名を初期状態から読むか。</li>
+      <li>ダイス結果をどこまで読み上げるか。</li>
+      <li>対応対象にスマートフォンを含めるか。初期テスト対象はデスクトップChrome/Firefox。</li>
+      <li>公開入口を共有Basic認証にするかCloudflare Accessにするか。これはVPS側で決定します。</li>
+      <li>ダークモードを本家へPRする時期。まずローカルで完成度を確認します。</li>
+      <li>VOICEVOX導入の要否。ブラウザ読み上げを仲間内で評価するまで保留します。</li>
+    </ul>
+  </section>
+
+  <section id="prompt">
+    <h2>新規タスク用の開始指示</h2>
+    <p>新しいCodexタスクを<code>Udonarium_syn</code>フォルダで開始する際は、この資料を参照させたうえで、次の指示を使用できます。</p>
+    <pre><code>このフォルダでは、TK11235/udonariumをベースにした仲間内向け派生版を開発します。
+引き継ぎ資料 UDONARIUM_HANDOFF.html を最初に読み、既存ファイルとGit状態を確認してください。
+
+まず以下を行ってください。
+1. 本家の現在の最新Release、既定ブランチ、Node.js/Angular要件を公式情報で再確認する。
+2. originをsynchro4351/udonarium、upstreamをTK11235/udonariumとして整理する。
+3. 既存masterを破壊せず、本家最新起点のsyn/mainを用意する。
+4. 本家無改造版の依存導入、テスト、ビルド、HTTPSローカル起動を確認する。
+5. 結果を文書化し、基準版セットアップとしてコミットする。
+
+その後、feature/dark-modeでダークモードを先に実装します。
+チャット読み上げは別のfeature/chat-speechで、ブラウザのspeechSynthesisを使って実装します。
+機能を混ぜず、主要作業は機能単位でコミットしてください。
+VPS用Compose、実APIキー、秘密情報はこのリポジトリへ入れないでください。</code></pre>
+  </section>
+
+  <section>
+    <h2>一次情報</h2>
+    <ul>
+      <li><a href="https://github.com/TK11235/udonarium">Udonarium本家</a> / <a href="https://github.com/TK11235/udonarium/releases">Releases</a></li>
+      <li><a href="https://developer.mozilla.org/ja/docs/Web/API/Window/speechSynthesis">MDN: Window.speechSynthesis</a></li>
+      <li><a href="https://developer.mozilla.org/ja/docs/Web/API/SpeechSynthesis/voiceschanged_event">MDN: voiceschanged</a></li>
+      <li><a href="https://github.com/VOICEVOX/voicevox_engine">VOICEVOX ENGINE</a></li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

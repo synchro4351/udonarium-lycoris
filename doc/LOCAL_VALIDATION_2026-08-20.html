@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Udonarium Lycoris ローカル基準検証</title>
+  <link rel="stylesheet" href="assets/document.css">
+</head>
+<body>
+<main>
+  <header>
+    <p class="meta">検証日: 2026-08-20 / 対象: Udonarium Lycoris v1.67.0</p>
+    <h1>Udonarium Lycoris ローカル基準検証</h1>
+    <p class="lead">VPSを用意する前に、採用候補を実際にフォークし、Windowsローカル環境でビルド、画面表示、WebSocketリレー通信まで確認した記録です。</p>
+  </header>
+
+  <div class="decision">
+    <strong>結論:</strong> リコリスはローカルで本番ビルドと統合サーバー起動に成功しました。WebSocketリレーでは2クライアント間のデータ中継も確認できています。現時点で、改造ベースとして進めてよい状態です。
+  </div>
+
+  <nav aria-label="目次">
+    <h2>目次</h2>
+    <ol class="toc">
+      <li><a href="#repository">リポジトリとブランチ</a></li>
+      <li><a href="#environment">検証環境</a></li>
+      <li><a href="#results">検証結果</a></li>
+      <li><a href="#communication">通信方式の確認</a></li>
+      <li><a href="#quality">上流時点の品質課題</a></li>
+      <li><a href="#dark-mode">Udoniteとダークモード</a></li>
+      <li><a href="#next">次の作業</a></li>
+    </ol>
+  </nav>
+
+  <section id="repository">
+    <h2>リポジトリとブランチ</h2>
+    <table>
+      <tbody>
+        <tr><th>ユーザーフォーク</th><td><a href="https://github.com/synchro4351/udonarium-lycoris">synchro4351/udonarium-lycoris</a></td></tr>
+        <tr><th>上流</th><td><a href="https://github.com/oron1208/udonarium-lycoris">oron1208/udonarium-lycoris</a></td></tr>
+        <tr><th>ローカルブランチ</th><td><code>syn/main</code></td></tr>
+        <tr><th>取得元コミット</th><td><code>266f11218cda3474fdfe6d27e42e84a479f14a95</code></td></tr>
+        <tr><th>アプリ版</th><td><code>1.67.0-lycoris.0</code></td></tr>
+      </tbody>
+    </table>
+    <p><code>origin</code>はユーザーフォーク、<code>upstream</code>は作者リポジトリに設定しました。ローカルの<code>syn/main</code>は誤って上流ブランチへpushしないよう、追跡先をまだ設定していません。</p>
+    <div class="warning"><strong>取得方式:</strong> 大容量の音声ライブラリ、バックアップ、上流で追跡されている<code>signaling-server/node_modules</code>を除外した部分クローンです。アプリ本体、サーバーコード、設定、ライセンス、ビルド定義は取得済みです。</div>
+  </section>
+
+  <section id="environment">
+    <h2>検証環境</h2>
+    <table>
+      <thead><tr><th>項目</th><th>値</th></tr></thead>
+      <tbody>
+        <tr><td>OS</td><td>Windows ローカル環境</td></tr>
+        <tr><td>Node.js</td><td><code>v20.11.1</code></td></tr>
+        <tr><td>npm</td><td><code>10.2.4</code></td></tr>
+        <tr><td>Angular</td><td><code>13.3.x</code></td></tr>
+        <tr><td>ブラウザ</td><td>デスクトップChrome</td></tr>
+        <tr><td>統合サーバーポート</td><td><code>12081</code></td></tr>
+      </tbody>
+    </table>
+    <p>依存導入は<code>npm ci --ignore-scripts --no-audit --no-fund</code>を使用しました。Windowsのユーザー共通npmキャッシュに権限問題があったため、検証時だけプロジェクト内キャッシュへ切り替えています。</p>
+  </section>
+
+  <section id="results">
+    <h2>検証結果</h2>
+    <table>
+      <thead><tr><th>検証</th><th>結果</th><th>補足</th></tr></thead>
+      <tbody>
+        <tr><td>依存導入</td><td class="status-good">成功</td><td>1259パッケージ。古い依存の非推奨警告あり。</td></tr>
+        <tr><td>開発ビルド</td><td class="status-good">成功</td><td><code>ng build --configuration development</code></td></tr>
+        <tr><td>本番ビルド</td><td class="status-good">成功</td><td>Google Fontsのビルド時取得に外部通信が必要。</td></tr>
+        <tr><td>統合サーバー起動</td><td class="status-good">成功</td><td>Web UI、リレー、ステータスAPIを同一ポートで提供。</td></tr>
+        <tr><td><code>/health</code></td><td class="status-good">成功</td><td><code>ok: true</code>とCPU・メモリ・接続統計を取得。</td></tr>
+        <tr><td><code>/api/status</code></td><td class="status-good">成功</td><td>2ブラウザ接続時に<code>peers: 2</code>を確認。</td></tr>
+        <tr><td>Web画面表示</td><td class="status-good">成功</td><td>タイトル、テーブル、接続・チャット等のUIをDOMで確認。</td></tr>
+        <tr><td>WebSocket接続</td><td class="status-good">成功</td><td><code>ws://127.0.0.1:12081/signaling</code></td></tr>
+        <tr><td>リレーデータ中継</td><td class="status-good">成功</td><td>2クライアント間で送信・受信し、統計が1件増加。</td></tr>
+        <tr><td>Lint</td><td class="status-caution">失敗</td><td>取得直後の上流に2585件。大半は空白・インデント規則。</td></tr>
+        <tr><td>単体テスト</td><td class="status-caution">失敗</td><td>古いspecの誤import、Hammer型不足などでテストビルド不能。</td></tr>
+      </tbody>
+    </table>
+    <p>本番成果物の初期JavaScript/CSS合計は約3.03 MB、推定転送量は約587 kBでした。複数のコンポーネントCSSがAngularの6 kB警告基準を超えますが、本番ビルド自体は完了しています。</p>
+  </section>
+
+  <section id="communication">
+    <h2>通信方式の確認</h2>
+    <p>リコリスには、少なくとも次の3方式が実装されています。</p>
+    <ul>
+      <li><code>websocket-relay</code>: ゲームデータを自前サーバー経由で中継する方式。</li>
+      <li><code>websocket-signaling</code>: 接続仲介をWebSocketで行い、データ本体はブラウザ間通信する方式。</li>
+      <li><code>skyway2023</code>: SkyWay 2023を利用する方式。</li>
+    </ul>
+    <div class="warning">
+      <strong>重要な食い違い:</strong> 公式更新資料ではWebSocketリレーが既定と説明されていますが、取得したv1.67.0の<code>src/assets/config.yaml</code>は<code>skyway2023</code>でした。そのままローカル表示するとSkyWayトークン関連のネットワークエラーが出ます。生成済み成果物だけを一時的に<code>websocket-relay</code>へ変更すると、エラーなしで2ブラウザが接続しました。
+    </div>
+    <p>本プロジェクトでは、自前VPS運用の既定値を<code>websocket-relay</code>とするのが自然です。ただし設定の恒久変更は、VPS構成と開発用設定の分離方法を決めてから行います。</p>
+    <h3>今回確認できた範囲</h3>
+    <ul>
+      <li>HTTPヘルスチェック、ステータス表示、静的ファイル配信。</li>
+      <li>ブラウザ2個の同時接続とロビー登録。</li>
+      <li>同一ルームIDを持つWebSocketクライアント間の<code>relay-data</code>配信。</li>
+      <li>接続数・中継数がサーバー統計へ反映されること。</li>
+    </ul>
+    <h3>まだ確認していない範囲</h3>
+    <ul>
+      <li>異なる回線・NAT・モバイル回線をまたぐ実地試験。</li>
+      <li>長時間接続、切断復帰、VPS再起動後のルーム復元。</li>
+      <li>大容量画像・音声、大人数、大規模ルームの負荷。</li>
+      <li>HTTPS/WSS、Caddy、バックアップ、レート制限。</li>
+    </ul>
+  </section>
+
+  <section id="quality">
+    <h2>上流時点の品質課題</h2>
+    <p>以下はフォーク後の改変で発生したものではなく、上流コミットをそのまま取得した時点の状態です。</p>
+    <ul>
+      <li>Lintは2582エラー、3警告。2523件は自動修正可能と表示されますが、一括修正は巨大差分になるため実行していません。</li>
+      <li>単体テストには別コンポーネント名を誤ってimportした雛形、存在しないファイル名、古いコンストラクター引数などがあります。</li>
+      <li>ChromeHeadlessはこのWindows環境のGPUサンドボックスでも起動失敗しました。テストコードのコンパイルエラーも別途存在します。</li>
+      <li>Angular 13と一部依存は古く、npmから非推奨・既知リスクを示す警告が出ます。</li>
+      <li>今回は再現性確認を優先し、<code>npm audit</code>による脆弱性評価はまだ実施していません。</li>
+    </ul>
+    <p>ダークモード実装前に全Lintを直す必要はありません。変更ファイルだけを厳密に検査できる仕組みと、重要機能向けの新規テストを先に整える方が現実的です。</p>
+  </section>
+
+  <section id="dark-mode">
+    <h2>Udoniteとダークモード</h2>
+    <p><a href="https://github.com/Mafty-Hs/Udonite">Udonite公式クライアント</a>の実ソース、コミット<code>190006c6642d62823236df9c5f493aefda37dd69</code>を一時取得し、CSSを調査しました。</p>
+    <h3>観察結果</h3>
+    <ul>
+      <li>黒一色ではなく、<code>#212121</code>、<code>#222</code>、<code>#333</code>、<code>#444</code>を主な面・境界・部品に使っています。</li>
+      <li>文字は<code>#fff</code>、<code>#ccc</code>などを中心にし、無効状態には中間灰色を使っています。</li>
+      <li>入力欄、select、textareaは暗色背景と白文字がグローバル指定されています。</li>
+      <li>チャットには金属調の暗いグラデーション、タブには暗色背景・内側シャドウが使われています。</li>
+      <li>色指定は100個以上のCSSへ分散しており、単純な一括置換には向きません。</li>
+    </ul>
+    <h3>リコリスでの実装方針案</h3>
+    <ol>
+      <li>背景、表面、浮上面、罫線、本文、弱い文字、アクセント、危険色をCSSカスタムプロパティとして定義する。</li>
+      <li>OS設定に従う<code>system</code>、明るい<code>light</code>、暗い<code>dark</code>の3状態を用意する。</li>
+      <li>最初に全体背景、パネル、入力欄、ボタン、モーダル、チャットへ適用する。</li>
+      <li>テーブル上の画像・コマ・照明表現はテーマの影響を受けすぎないよう分離する。</li>
+      <li>色だけで状態を区別せず、フォーカス輪郭と文字コントラストを確認する。</li>
+    </ol>
+    <div class="warning"><strong>ライセンス:</strong> 配色の考え方を参考にするだけでなく、UdoniteのCSSやAngularコードを実際に移植する場合は、UdoniteのMITライセンスと同作が掲示する上流プロジェクトの著作権表示を維持します。</div>
+  </section>
+
+  <section id="next">
+    <h2>次の作業</h2>
+    <ol>
+      <li><strong>ブランチ基盤:</strong> この基準資料をローカルコミットし、<code>syn/main</code>をフォークへ初回pushする。</li>
+      <li><strong>設定分離:</strong> 開発・本番で<code>websocket-relay</code>を安全に選べる設定テンプレートを作る。</li>
+      <li><strong>ダークモード試作:</strong> CSSトークンとテーマ切替の最小差分を別ブランチで作る。</li>
+      <li><strong>回帰検査:</strong> 変更ファイル向けLint、ビルド、テーマ別スクリーンショットを自動化する。</li>
+      <li><strong>通信試験:</strong> 2ブラウザの入室・チャット・コマ移動・保存・再接続を自動または半自動で確認する。</li>
+      <li><strong>VPS準備後:</strong> HTTPS/WSS、Caddy、永続化、バックアップ、帯域・メモリ監視を追加する。</li>
+    </ol>
+    <p>通信改善は努力目標のままですが、リコリスの既存リレーを正しく運用・計測するだけでも、本家系P2Pのみの構成よりかなり良い出発点になります。</p>
+  </section>
+
+  <footer>
+    <p>関連資料: <a href="UDONARIUM_VARIANT_RESEARCH.html">派生版・通信方式 調査報告</a> / <a href="UDONARIUM_HANDOFF.html">プロジェクト引き継ぎ</a></p>
+  </footer>
+</main>
+</body>
+</html>
