@@ -21,6 +21,7 @@
       <li><a href="#summary">要約と暫定判断</a></li>
       <li><a href="#premise">引き継ぎ資料からの前提</a></li>
       <li><a href="#comparison">候補比較</a></li>
+      <li><a href="#github-rescan">GitHub再探索</a></li>
       <li><a href="#axe">Udonarium Axe</a></li>
       <li><a href="#lycoris">ユドナリウムリコリス</a></li>
       <li><a href="#plus">ユドナリウムPlus</a></li>
@@ -44,6 +45,7 @@
     </div>
     <p>AxeはAngular 22 / TypeScript 6を使った現代的な実装で、照明・視界、エフェクト、外部キャラ取込、モバイルUI、リプレイ、ブラウザ内自動保存、ダークテーマまで統合しています。通信はSkyWay SDK v2のWebRTC P2Pですが、TURN、自動再接続、接続品質表示、手動再同期を備えています。一方、リコリスはWebSocket Relay、サーバー保存、再接続、画像・音声のサーバー配信を備え、厳しい回線で接続経路を予測しやすい点が優位です。</p>
     <p>詳細は<a href="UDONARIUM_AXE_COMPARISON_2026-08-25.html">Axe・Lycoris比較調査</a>を参照してください。</p>
+    <p>GitHubのfork networkを含む再探索では、弱い回線を意識したP2P復旧策を持つ<a href="https://github.com/hktrpg/UdonariumWithFly">Udonarium @ HKTRPG</a>を第三候補として発見しました。詳細は<a href="UDONARIUM_GITHUB_VARIANT_RESEARCH_2026-08-25.html">GitHub派生再探索</a>を参照してください。</p>
     <p>ただし、開発の新しさは利点であると同時にリスクです。公開リポジトリの最新確認コミットは2026-08-03のv1.67.0で、公式サイトの更新履歴v1.66より先行していました。通信サーバーは機能豊富ですが、認証、権限制御、レート制限、状態保存の堅牢性は本番利用前に補強が必要です。</p>
     <div class="warning"><strong>重要:</strong> 旧引き継ぎ資料の「本家をベースに確定」という結論は、当時の「ダークモードと読み上げだけを小さく追加する」前提に基づきます。多機能版と通信安定化を重視する今回の方針では、ベース選定を再度開いて比較する必要があります。</div>
   </section>
@@ -75,6 +77,13 @@
           <td><span class="status-good">新たな本命候補</span>。異回線試験で通信の最低合格線を確認する。</td>
         </tr>
         <tr>
+          <td><strong>Udonarium @ HKTRPG</strong></td>
+          <td>With Fly系の大規模VTT版。照明・戦闘・ロール・2D・自動フォルダ保存等。</td>
+          <td>SkyWay P2P。回線別切断猶予、購読再試行、ルーム再参加、5秒メッシュ修復、ピアhub転送。</td>
+          <td>MIT表記。Angular 20。2026-08-23確認コミット。</td>
+          <td><span class="status-good">第三候補</span>。ローカル基準試験後、必要なら異回線試験へ加える。</td>
+        </tr>
+        <tr>
           <td>本家Udonarium</td>
           <td>構成が比較的小さく、上流追従とPull Requestに向く。</td>
           <td>WebRTC + SkyWay 2023。バックエンドは主に認証トークン発行。</td>
@@ -104,6 +113,13 @@
         </tr>
       </tbody>
     </table>
+  </section>
+
+  <section id="github-rescan">
+    <h2>GitHub再探索</h2>
+    <p>2026-08-25に、GitHub repository検索へforkを明示的に含め、本家、Lily、With Fly、Axe、Lycorisのfork一覧を直接たどりました。多数の私家版を確認しましたが、通信面で正式候補に加える価値があったのはUdonarium @ HKTRPGです。</p>
+    <p>HKTRPG版は中央Relayではないものの、短い切断の猶予、SkyWay購読とルームメンバーの復元、最後の部屋への再オープン、5秒周期のメッシュ修復、高遅延時のhub転送、送信優先制御、ローカルフォルダ自動保存を備えます。</p>
+    <div class="decision"><strong>更新後の候補:</strong> Lycoris Relay、Axe、HKTRPG版の三候補。ただし通信の弱いメンバーへ試験を依頼する前に、こちらでHKTRPG版のビルドと2ブラウザ同期を確認します。詳細は<a href="UDONARIUM_GITHUB_VARIANT_RESEARCH_2026-08-25.html">専用報告</a>を参照してください。</div>
   </section>
 
   <section id="axe">
@@ -243,6 +259,7 @@ Udonite Server（Node.js）
     <ul>
       <li><a href="https://github.com/TK11235/udonarium">本家Udonarium</a> / <a href="https://github.com/TK11235/udonarium/releases">Releases</a></li>
       <li><a href="https://github.com/Xelltis/udonarium_axe">Udonarium Axe GitHub</a> / <a href="https://xelltis.github.io/udonarium_axe/">公式ドキュメント</a> / <a href="UDONARIUM_AXE_COMPARISON_2026-08-25.html">Axe・Lycoris比較調査</a></li>
+      <li><a href="https://github.com/hktrpg/UdonariumWithFly">Udonarium @ HKTRPG</a> / <a href="https://z01.hktrpg.com/">公開サイト</a> / <a href="UDONARIUM_GITHUB_VARIANT_RESEARCH_2026-08-25.html">GitHub派生再探索</a></li>
       <li><a href="https://github.com/oron1208/udonarium-lycoris">Udonarium Lycoris GitHub</a> / <a href="https://udonarium-lycoris.ddns.net/docs/">公式ドキュメント・更新履歴</a></li>
       <li><a href="https://create-now.vercel.app/tyrano/udon-lily">ユドナリウムPlus設定ページ</a></li>
       <li><a href="https://github.com/NanasuNANA/UdonariumWithFly">Udonarium with Fly</a></li>

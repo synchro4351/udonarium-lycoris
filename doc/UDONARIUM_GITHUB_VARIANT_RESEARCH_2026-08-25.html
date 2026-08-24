@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Udonarium派生 GitHub再探索</title>
+  <link rel="stylesheet" href="assets/document.css">
+</head>
+<body>
+<main>
+  <header>
+    <p class="meta">調査日: 2026-08-25 / GitHub fork network・repository検索・公開ソース確認</p>
+    <h1>Udonarium派生 GitHub再探索</h1>
+    <p class="lead">通常のWeb検索だけでは見つかりにくいfork、私家版、近年更新された派生をGitHub上で再探索し、通信安定性を最優先に候補を選別しました。</p>
+  </header>
+
+  <nav aria-label="目次">
+    <h2>目次</h2>
+    <ol class="toc">
+      <li><a href="#conclusion">結論</a></li>
+      <li><a href="#method">探索方法</a></li>
+      <li><a href="#shortlist">候補一覧</a></li>
+      <li><a href="#hktrpg">最有力追加候補: HKTRPG版</a></li>
+      <li><a href="#network">通信方式の再比較</a></li>
+      <li><a href="#others">その他の候補</a></li>
+      <li><a href="#test">今後の検証対象</a></li>
+      <li><a href="#sources">一次情報</a></li>
+    </ol>
+  </nav>
+
+  <section id="conclusion">
+    <h2>結論</h2>
+    <div class="decision">
+      <strong>有力な見落としが1件ありました:</strong> <a href="https://github.com/hktrpg/UdonariumWithFly">Udonarium @ HKTRPG</a><br>
+      機能だけでなく、弱い回線を意識したP2P復旧策を独自実装しているため、Axe・Lycorisに続く第三候補へ加えます。<br>
+      ただし中央WebSocket Relayではなく、通信の最終評価には実回線試験が必要です。
+    </div>
+    <p>GitHubのforkを明示的に含めた検索と主要系統のfork一覧をたどると、通常検索から漏れていた多数の私家版が見つかりました。その大半は本家・Lily・With Flyの通信をそのまま使う機能特化版、同期しているだけのfork、配布補助でした。通信方式そのものが新しい候補は、既知のLycoris Relay、Udonite、Axe以外には確認できませんでした。</p>
+    <p>一方、HKTRPG版はSkyWay P2Pのままですが、回線断・高遅延・不完全メッシュ・SkyWay SDKの一時エラーから復旧するための実装が厚く、公開デモと活発な更新もあります。P2Pをどこまで安定化できるかという観点では、Axeと別方向から本気で取り組んでいる候補です。</p>
+  </section>
+
+  <section id="method">
+    <h2>探索方法</h2>
+    <ul>
+      <li>GitHub repository検索で<code>udonarium</code>を名前・説明・READMEから検索し、更新日の新しい順に確認</li>
+      <li>通常除外されるforkを<code>fork:true</code>で明示的に含め、2024～2026年更新を重点確認</li>
+      <li>本家、Udonarium Lily、Udonarium with Fly、Axe、Lycorisのfork一覧をGitHub APIで直接取得</li>
+      <li><code>WebSocket</code>、<code>Relay</code>、<code>Socket.IO</code>、Client/Server、SkyWay 2023等の通信語でも再検索</li>
+      <li>READMEだけで判断せず、有力候補の<code>package.json</code>、通信設定、通信ソース、テストを確認</li>
+      <li>更新日だけが新しい上流同期、素材・変換ツール、個別システム専用版を正式候補から分離</li>
+    </ul>
+    <p class="meta">GitHub上の非公開リポジトリ、GitHub外だけで配布されるソース非公開版、検索語にUdonariumを含まない独立再実装は対象外です。</p>
+  </section>
+
+  <section id="shortlist">
+    <h2>候補一覧</h2>
+    <table>
+      <thead><tr><th>候補</th><th>更新・基盤</th><th>主な特徴</th><th>通信</th><th>位置づけ</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Udonarium @ HKTRPG</strong></td>
+          <td>2026-08-23確認コミット。Angular 20。With Fly系</td>
+          <td>照明・FoW、戦闘、ロール、2D、Undo、経路移動、ノート、場面プリセット、多軌BGM、自動フォルダ保存</td>
+          <td>SkyWay 2023 P2P。回線別猶予、購読再試行、ルーム再参加、メッシュ修復、ピア経由転送</td>
+          <td><span class="status-good">第三候補</span>。通信実装を含め検証価値あり</td>
+        </tr>
+        <tr>
+          <td>Udonarium Daphne</td>
+          <td>v0.1.18、2026-08-08。Angular 17。公開前プレビュー</td>
+          <td>GM表示、秘匿表示、バフ・ラウンド、リソース操作、Cloudflare Quick Tunnel</td>
+          <td>SkyWay 2023 P2P。本家系の品質表示・ピア転送を継承</td>
+          <td><span class="status-caution">観察対象</span>。まだ公開前</td>
+        </tr>
+        <tr>
+          <td>Udonarium Switch</td>
+          <td>2026-08-17更新。Angular 17。本家fork</td>
+          <td>SW2.5向けリソース・バフ、ダッシュボード、ダイス表、複数画像、スロープ</td>
+          <td>本家系SkyWay 2023 P2P</td>
+          <td>SW2.5機能の参考。通信候補ではない</td>
+        </tr>
+        <tr>
+          <td>Udonarium SAKURA</td>
+          <td>2026-07。Lycoris v1.54.0、Angular 13</td>
+          <td>さくらレンタルサーバーへPHP CGIだけで設置</td>
+          <td>SkyWay 2023 P2P。画像・音声もP2P</td>
+          <td>安価な設置方法の参考。Lycoris Relayの代替ではない</td>
+        </tr>
+        <tr>
+          <td>Udonarium Lily SDK2023</td>
+          <td>2026-05更新。Lily v1.12.0系、Angular 13</td>
+          <td>Lilyを新SkyWay SDKへ移行</td>
+          <td>SkyWay 2023 P2P</td>
+          <td>Lily継続利用向け。通信方式は新候補にならない</td>
+        </tr>
+        <tr>
+          <td>Udonarium with Fly</td>
+          <td>2026-08更新。Angular 20。17 stars / 23 forks確認</td>
+          <td>高度、立ち絵、カットイン、チャット色、ダイス表</td>
+          <td>SkyWay 2023 P2P</td>
+          <td>重要な系譜・機能参考。HKTRPG版の上流</td>
+        </tr>
+        <tr>
+          <td>Udonarium Murder</td>
+          <td>2026-06更新。Angular 17</td>
+          <td>マーダーミステリー向け、Netlify Functionsでトークン発行</td>
+          <td>SkyWay 2023 P2P</td>
+          <td>用途特化。通信方式は本家系</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="hktrpg">
+    <h2>最有力追加候補: Udonarium @ HKTRPG</h2>
+    <p><a href="https://github.com/hktrpg/UdonariumWithFly">HKTRPG/UdonariumWithFly</a>は、NanasuNANA版With Flyから派生した、香港TRPGコミュニティ向けの大規模改修です。公開デモは<a href="https://z01.hktrpg.com/">z01.hktrpg.com</a>です。繁体字・簡体字・英語・日本語を実行中に切り替えられます。</p>
+
+    <h3>機能面</h3>
+    <ul>
+      <li>GM / User / Guestのロール別入室、パスワード、招待リンク、プレイヤー権限</li>
+      <li>照明、視界、壁、FoW、場面ツール、戦闘トラッカー</li>
+      <li>2Dモード、天候、画像エフェクト、状態・オーラ・死亡表示</li>
+      <li>キーボード操作、Undo / Redo、経路移動、Ping、複数選択</li>
+      <li>プリセット場面、シナリオ文章、多軌BGM、ココフォリア互換キャラJSON</li>
+      <li>画像・動画・PDFを扱えるノート、handout、自分だけに見えるメモ</li>
+      <li>Chrome / EdgeのFile System Access APIによるルームZIP自動保存</li>
+      <li>モバイルUI、PWA更新通知、初回チュートリアル</li>
+    </ul>
+    <p>標準ダークテーマは確認できませんでした。この点ではAxeが明確に優位です。またAngular 20で比較的新しいものの、AxeのAngular 22 / TypeScript 6ほど全面的な再設計ではなく、With Fly系の大規模拡張です。</p>
+
+    <h3>通信面で確認した独自対策</h3>
+    <ul>
+      <li><strong>回線速度別の切断猶予:</strong> 通常8秒、3G相当10秒、2G相当15秒待ち、短いDataChannel断を即切断としません。</li>
+      <li><strong>購読再試行:</strong> SkyWayのpublicationが残っている一時的なSDK・ICEエラーでは、通常2.5秒、3G相当3.5秒、2G相当5秒後に再購読します。</li>
+      <li><strong>ルームメンバー復元:</strong> room memberのfatal error時に、退出扱いへ落とす前に再参加とDataStream再公開を試みます。</li>
+      <li><strong>ルーム再オープン:</strong> 最後に成功した部屋を覚え、切断・timeout・一部の認証・サーバーエラー時に再オープンします。再試行間隔は3秒から最大60秒へ増加します。</li>
+      <li><strong>メッシュ修復:</strong> 5秒周期で部屋メンバーと開いているDataChannelを比較し、欠けた接続をつなぎ直します。45秒以上半開きの接続は再試行対象にします。</li>
+      <li><strong>stale検出:</strong> 45秒以上受信がなくhealthが低いDataChannelをリサイクルします。</li>
+      <li><strong>高遅延時のsurvival mesh:</strong> 5人以上の部屋でRTTが2秒を超える不完全メッシュでは、直接接続を1本に抑え、接続済みピアをhubとして転送する方針があります。4人以下は完全メッシュを維持します。</li>
+      <li><strong>ピア経由転送:</strong> TTL付きデータを他の接続済みピアへfan-outし、不完全メッシュを補います。</li>
+      <li><strong>送信優先制御:</strong> オブジェクト更新・削除やカーソルを、大きなファイル転送より優先します。未開通DataChannel宛ての送信を一時保留し、開通後に流します。</li>
+      <li><strong>診断:</strong> ping、health、ICE candidate種別、接続・警告履歴を診断用に収集します。</li>
+    </ul>
+    <div class="warning"><strong>評価上の注意:</strong> これらは中央サーバーRelayではなく、ブラウザ同士のP2Pを粘り強く修復する仕組みです。2者間に直接・TURN・第三ピア経由のどの経路も成立しない場合は救済できません。また5人未満では高遅延時のhub化を使わないため、少人数卓では主に再購読・再参加・メッシュ修復が効きます。</div>
+
+    <h3>保存と復旧</h3>
+    <p>フォルダを一度許可すると、変更後5秒の待機、成功保存間隔30秒以上で、部屋ごとのZIPとメタ情報を自動上書きします。退室、部屋切替、再読込、PWA更新時には即時保存を試みます。これは通信を安定させるものではありませんが、P2P卓が分断・消失した場合の復旧保険として強力です。</p>
+  </section>
+
+  <section id="network">
+    <h2>通信方式の再比較</h2>
+    <table>
+      <thead><tr><th>候補</th><th>経路</th><th>主な復旧策</th><th>中央の正本</th><th>今回の評価</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Lycoris Relay</strong></td><td>自前VPSへのHTTPS/WSS</td><td>WebSocket再接続、サーバースナップショット、メディア再取得</td><td>あり</td><td>経路予測性と中央復旧で最有力</td></tr>
+        <tr><td><strong>Axe</strong></td><td>WebRTC直接 / TURN / 一時ピア転送</td><td>25秒stale、自動再接続、ルーム再参加、手動再同期、IndexedDB自動保存</td><td>なし</td><td>現代的基盤と復旧UXを含む本命</td></tr>
+        <tr><td><strong>HKTRPG</strong></td><td>WebRTC直接 / TURN / ピアhub転送</td><td>回線別猶予、購読・ルーム再参加、5秒メッシュ修復、再オープン、フォルダ自動保存</td><td>なし</td><td>第三候補。弱回線への適応実装が独特</td></tr>
+        <tr><td>本家 / Lily / With Fly / Switch等</td><td>WebRTC直接 / TURN</td><td>系統により自動再接続・手動再接続</td><td>なし</td><td>新しい通信解決策としての優先度は低い</td></tr>
+        <tr><td>Udonite</td><td>Socket.IOで中央サーバー</td><td>サーバー状態・DB</td><td>あり</td><td>構造は有力だが、更新と運用基盤が古い</td></tr>
+      </tbody>
+    </table>
+    <p>仕様だけから安定性の順位を確定することはできません。Lycorisは経路を単純化し、AxeとHKTRPGはP2Pの失敗を検知・修復します。問題のある参加者の回線で、どの方式が実際に成立するかが最終判断になります。</p>
+  </section>
+
+  <section id="others">
+    <h2>その他の候補</h2>
+    <h3>参考に残す</h3>
+    <ul>
+      <li><a href="https://github.com/chomisomiso/udonarium_switch">Udonarium Switch</a>: SW2.5向けの機能設計が有用。通信は本家系P2P。</li>
+      <li><a href="https://github.com/Kiira1925/Udonarium_Daphne">Udonarium Daphne</a>: Angular 17、MIT、59件のspecを確認。軽量な戦闘管理と一時公開は面白いが、v0.1.18の公開前プレビュー。</li>
+      <li><a href="https://github.com/oron1208/udonarium-sakura">Udonarium SAKURA</a>: PHPだけでSkyWayトークンAPIを設置する方法はVPS以外の運用参考になる。</li>
+      <li><a href="https://github.com/FukaseDaichi/udonarium_murder">Udonarium Murder</a>: Angular 17への更新とNetlify Functions構成は参考になるが、マーダーミステリー特化。</li>
+      <li><a href="https://github.com/tubochan/udonarium_lily_sdk2023">Udonarium Lily SDK2023</a>: Lilyを新SkyWayへ移した有志版。Lily系データ・機能の確認用。</li>
+      <li><a href="https://github.com/Mafty-Hs/Kuroudon">Kuroudon</a>: 黒基調UIの参考。ただし2021年世代で通信改善は確認できない。</li>
+    </ul>
+
+    <h3>正式候補から除外</h3>
+    <ul>
+      <li>上流を同期しただけで独自説明や差分がないfork</li>
+      <li>特定カードゲーム、特定TRPGシステム、デッキ作成だけに特化した版</li>
+      <li>キャラクター変換、ログ抽出、素材配布、バックエンド単体</li>
+      <li>公開サービスはあるが公式ソース・ライセンス・自前設置方法を確認できないもの</li>
+    </ul>
+  </section>
+
+  <section id="test">
+    <h2>今後の検証対象</h2>
+    <p>正式な実回線試験は、次の三候補までに絞るのが妥当です。</p>
+    <ol>
+      <li><strong>Lycoris WebSocket Relay:</strong> 中央Relay方式の基準</li>
+      <li><strong>Udonarium Axe:</strong> 現代的なP2P復旧方式と標準ダークテーマの本命</li>
+      <li><strong>Udonarium @ HKTRPG:</strong> survival mesh・自動再参加・自動フォルダ保存を持つ追加候補</li>
+    </ol>
+    <div class="decision"><strong>推奨手順:</strong> まずこちらでHKTRPG版のビルドと2ブラウザ同期を確認します。ローカル基準試験に通った場合だけ、通信の弱い卓メンバーへ30分試験をお願いし、試験負担を不必要に増やさないようにします。</div>
+    <p>HKTRPG版が合格しても、ダークテーマ、リプレイ、コードの現代化ではAxe、中央復旧ではLycorisが優位です。採用は接続成功率を最優先し、合格候補が複数あった場合に機能・保守性で決めます。</p>
+  </section>
+
+  <section id="sources">
+    <h2>一次情報</h2>
+    <ul>
+      <li><a href="https://github.com/TK11235/udonarium">本家Udonarium</a> / <a href="https://github.com/TK11235/udonarium/forks">fork一覧</a></li>
+      <li><a href="https://github.com/hktrpg/UdonariumWithFly">Udonarium @ HKTRPG ソース</a> / <a href="https://z01.hktrpg.com/">公開サイト</a></li>
+      <li><a href="https://github.com/NanasuNANA/UdonariumWithFly">Udonarium with Fly</a> / <a href="https://github.com/NanasuNANA/UdonariumWithFly/forks">fork一覧</a></li>
+      <li><a href="https://github.com/entyu/udonarium_lily">Udonarium Lily</a> / <a href="https://github.com/entyu/udonarium_lily/forks">fork一覧</a></li>
+      <li><a href="https://github.com/chomisomiso/udonarium_switch">Udonarium Switch</a></li>
+      <li><a href="https://github.com/Kiira1925/Udonarium_Daphne">Udonarium Daphne</a></li>
+      <li><a href="https://github.com/oron1208/udonarium-sakura">Udonarium SAKURA</a></li>
+      <li><a href="https://github.com/FukaseDaichi/udonarium_murder">Udonarium Murder</a></li>
+      <li><a href="https://github.com/tubochan/udonarium_lily_sdk2023">Udonarium Lily SDK2023</a></li>
+      <li><a href="UDONARIUM_AXE_COMPARISON_2026-08-25.html">Axe・Lycoris比較調査</a></li>
+    </ul>
+    <p class="meta">更新日・リポジトリ数値は2026-08-25確認時点です。「評価」「候補」は本プロジェクトの通信安定性・自前設置・改造ベース要件に照らした判断です。</p>
+  </section>
+</main>
+</body>
+</html>
