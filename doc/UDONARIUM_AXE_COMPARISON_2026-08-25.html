@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Udonarium Axe・Lycoris 比較調査</title>
+  <link rel="stylesheet" href="assets/document.css">
+</head>
+<body>
+<main>
+  <header>
+    <p class="meta">調査日: 2026-08-25 / 対象: Udonarium Axe v1.42.0・Udonarium Lycoris v1.67.0</p>
+    <h1>Udonarium Axe・Lycoris 比較調査</h1>
+    <p class="lead">機能、改造ベースとしての品質、VPS運用、そして最重要の通信安定性を、公式資料・公開ソース・公開デモの確認結果から比較します。</p>
+  </header>
+
+  <nav aria-label="目次">
+    <h2>目次</h2>
+    <ol class="toc">
+      <li><a href="#conclusion">結論</a></li>
+      <li><a href="#facts">確認した版と調査範囲</a></li>
+      <li><a href="#features">機能比較</a></li>
+      <li><a href="#network">通信構成の違い</a></li>
+      <li><a href="#axe-resilience">Axeの通信対策</a></li>
+      <li><a href="#failure">障害時の比較</a></li>
+      <li><a href="#operation">VPS・保守・プライバシー</a></li>
+      <li><a href="#decision">選定方針</a></li>
+      <li><a href="#test-plan">実回線テスト計画</a></li>
+      <li><a href="#sources">一次情報</a></li>
+    </ol>
+  </nav>
+
+  <section id="conclusion">
+    <h2>結論</h2>
+    <div class="decision">
+      <strong>ベース選定を再度開く価値があります。</strong><br>
+      アプリ全体・コード基盤・ダークモードを含む完成度では、Axeが新しい第一候補になり得ます。<br>
+      一方、<strong>異なる回線でも接続経路を予測しやすくすること</strong>を最優先するなら、現時点ではLycorisのWebSocket Relayが一歩優勢です。
+    </div>
+    <p>Axeは単なる機能追加版ではありません。Angular 22、TypeScript 6、Signals、Vitest、Playwrightを使った現代的な再実装で、標準のダークテーマ、強力な照明・視界・エフェクト、モバイルUI、リプレイ、ブラウザ内自動保存まで備えています。公開デモv1.42.0の初期画面も実際に開き、GM・PL・観戦者ロール、接続、画像、ジュークボックス、カットイン、インベントリ、キャラ取込、ZIP読込、自動保存、リプレイ、テーマ切替などの導線を確認しました。</p>
+    <p>通信はSkyWay SDK v2によるWebRTC P2Pです。AxeにはTURN経由接続、自動再接続、無応答検知、接続品質表示、再同期、ローカル自動保存という実用的な対策があります。このため「AxeはP2Pだから不安定」とはまだ判断できません。ただし、Lycoris Relayのように全通信と復旧用状態を自分のVPSへ集約する方式ではなく、接続可否は各参加者の回線、SkyWay、TURN経路に左右されます。</p>
+    <div class="warning"><strong>現段階の推奨:</strong> Axeを本命候補、Lycoris Relayを通信安定性の基準器として、同じ参加者・同じ回線条件で比較試験します。結果が出るまでは、どちらかへ大きな独自改造を始めません。</div>
+  </section>
+
+  <section id="facts">
+    <h2>確認した版と調査範囲</h2>
+    <table>
+      <thead><tr><th>項目</th><th>Udonarium Axe</th><th>Udonarium Lycoris</th></tr></thead>
+      <tbody>
+        <tr><td>確認版</td><td>v1.42.0、コミット<code>40522de</code>（2026-08-24時点のmain）</td><td>v1.67.0、コミット<code>266f112</code></td></tr>
+        <tr><td>実装基盤</td><td>Angular 22.1 / TypeScript 6 / RxJS 7.5 / Tailwind 4</td><td>Angular 13 / TypeScript 4.6系</td></tr>
+        <tr><td>テスト基盤</td><td>Vitest、Playwright、ESLint。確認時点で<code>*.spec.ts</code> 547件、E2E用<code>*.spec.ts</code> 52件</td><td>既存テスト・lintは現代化が必要。本番ビルドはローカル成功済み</td></tr>
+        <tr><td>ライセンス</td><td>MIT。上流Udonarium、Lily等の告知をLICENSEに収録</td><td>MIT</td></tr>
+        <tr><td>調査方法</td><td>公式サイト、公式リポジトリ、ソース、公開デモの初期画面</td><td>公式資料、フォーク済みソース、ローカルビルド、Relayの2クライアント中継試験</td></tr>
+      </tbody>
+    </table>
+    <p class="meta">ファイル件数はテストの網羅率を直接保証しませんが、Axeが自動試験を開発工程へ広く組み込んでいることは確認できます。</p>
+  </section>
+
+  <section id="features">
+    <h2>機能比較</h2>
+    <table>
+      <thead><tr><th>分野</th><th>Udonarium Axe</th><th>Udonarium Lycoris</th><th>評価</th></tr></thead>
+      <tbody>
+        <tr><td>盤面</td><td>2D/3D、四方の壁面、重力、六角グリッド、高度なスナップ、範囲選択、重なり選択</td><td>本家系3D盤面、豊富な卓操作</td><td>Axeが強い</td></tr>
+        <tr><td>照明・視界</td><td>暗闇、環境光、壁高、窓、遮光、円錐・高度・アニメーション付き光源、暗視・超視覚・盲目・熱視覚、役割別の見え方確認</td><td>照明、光源、壁の遮光、所有権・視界管理</td><td>Axeがより細密</td></tr>
+        <tr><td>戦闘・キャラ</td><td>構造化シート、ポートレート、任意範囲形状、PL/GMツールバー、NPC検索、インベントリ</td><td>イニシアチブ、ラウンド、計算式、GM秘密管理、ホットバー</td><td>用途次第。双方強い</td></tr>
+        <tr><td>取込</td><td>ココフォリアのキャラJSON、外部キャラサービス、CharaXiv、実験的なココフォリア部屋ZIP</td><td>ユドナリウム系ZIPを中心とする</td><td>Axeが外部連携で強い</td></tr>
+        <tr><td>チャット</td><td>編集、返信、引用、ジャンプ、ノート化、入力中表示、システムタブ、ダーク/ライト双方の配色配慮</td><td>多タブ、ダイス、VN・立ち絵連携など</td><td>Axeが現代的</td></tr>
+        <tr><td>音・演出</td><td>ジュークボックス、BGM同期・クロスフェード、カットイン、31種・90プリセットのエフェクト、複数段階・複数対象・条件発火</td><td>ジュークボックス、BGM・SE・環境音、ダイスカットイン、VNモード</td><td>Axeが特にエフェクトで強い</td></tr>
+        <tr><td>リプレイ</td><td>盤面・発言のローカル記録、検索・編集・再生、Markdown、画像、MP4、専用ZIP出力</td><td>同等の統合リプレイは未確認</td><td>Axe固有の大きな利点</td></tr>
+        <tr><td>自動保存</td><td>ブラウザIndexedDBへ5世代・合計256MB。変更後20秒、最長3分を基準に適応保存</td><td>Relayではサーバーにスナップショット・イベント・メディアを保持</td><td>目的が異なる。Axeは端末保険、Lycorisは部屋復旧基盤</td></tr>
+        <tr><td>テーマ</td><td><strong>ダーク・ライト・OS連動を標準搭載し、選択を保存</strong></td><td>標準ダークテーマなし。独自実装予定</td><td>Axeが明確に優位</td></tr>
+        <tr><td>モバイル</td><td>専用レイアウトとチュートリアル。ただし公式READMEはデスクトップChromeを推奨</td><td>利用可能だが主にデスクトップ向け</td><td>Axeが一歩先。ただし実機試験必須</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="network">
+    <h2>通信構成の違い</h2>
+    <h3>Axe: WebRTC P2P</h3>
+    <pre><code>                 ┌─ SkyWay / TURN（接続確立・必要時の通信経路）
+ブラウザA ──────┼──────── WebRTC DataChannel ────── ブラウザB
+     │           └─ トークン発行API（App ID / Secretはサーバー側）
+     └─ 卓の復旧用コピーは各ブラウザのIndexedDB</code></pre>
+    <p>通常の卓データは参加者のブラウザ間で同期され、Axe用バックエンドはSkyWayの認証トークン発行だけを担当します。直接通信が難しい場合はSkyWayのTURNを通ることがありますが、これはWebRTCのパケット経路を中継する仕組みです。自前バックエンドに部屋状態が保存されるわけではありません。</p>
+
+    <h3>Lycoris: WebSocket Relay</h3>
+    <pre><code>ブラウザA ── HTTPS/WSS ── 自前Lycorisサーバー ── HTTPS/WSS ── ブラウザB
+                              │
+                              ├─ ルームイベント・スナップショット
+                              └─ 画像・音声</code></pre>
+    <p>Relayモードでは卓の状態変更が自前サーバーを経由し、復旧用の状態とメディアもサーバー側に置けます。参加者側は一般的なHTTPS/WSSでVPSへ到達できればよいため、NATやUDP制限の影響を受けにくく、経路を運営者が把握しやすい構成です。</p>
+
+    <table>
+      <thead><tr><th>比較軸</th><th>Axe P2P</th><th>Lycoris Relay</th></tr></thead>
+      <tbody>
+        <tr><td>厳しいNAT・UDP制限</td><td>TURNへフォールバックできるが、SkyWay/TURNと回線条件に依存</td><td>HTTPS/WSSが通れば成立しやすい</td></tr>
+        <tr><td>参加人数増加</td><td>各端末のピア接続数と配信負荷が増える</td><td>クライアント負荷は比較的一定。VPS負荷と転送量が増える</td></tr>
+        <tr><td>後入り・再参加</td><td>接続中のピアから同期。必要なら再同期操作</td><td>サーバーの保存状態を復旧の基準にできる</td></tr>
+        <tr><td>中央障害</td><td>トークン更新や新規接続は影響。既存P2Pは中央の部屋保存に依存しない</td><td>VPS停止時は全員が影響</td></tr>
+        <tr><td>運営者の可観測性</td><td>各端末から相手別RTT・TURN使用を確認。中央での全体把握は弱い</td><td>部屋数・接続数・Relay統計をサーバーで監視可能</td></tr>
+        <tr><td>卓データの集中</td><td>中央へ恒久保存しないためプライバシー面で有利</td><td>運営VPSへ状態・メディアが集まるため保護と削除方針が必要</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="axe-resilience">
+    <h2>Axeに実装済みの通信対策</h2>
+    <p>AxeのP2Pは、切断を放置するだけの実装ではありません。公式マニュアルとソースから次を確認しました。</p>
+    <ul>
+      <li><strong>接続品質表示:</strong> 相手ごとに良好、注意、不安定、切断の4段階、往復遅延、TURN中継経由かを表示します。</li>
+      <li><strong>無応答検知:</strong> DataChannelでpingを扱い、25秒間データがない接続をstaleとして扱います。</li>
+      <li><strong>段階的な自動再接続:</strong> 1、2、4、8、15秒の間隔で最大5段階の再試行を行います。相手の退室が分かれば打ち切ります。</li>
+      <li><strong>ルーム再参加:</strong> SkyWayルームが閉じた場合は再参加し、DataStreamを作り直して既知の相手へ接続し直す処理があります。</li>
+      <li><strong>トークン発行の再試行:</strong> 5秒タイムアウト、最大3回、0.5秒・1.5秒の待機があり、5xx、408、429等を再試行します。</li>
+      <li><strong>手動復旧:</strong> 再接続のほか、「部屋のデータを同期し直す」で接続を切らず状態だけを取り直せます。</li>
+      <li><strong>一時的なピア経由転送:</strong> 不完全なメッシュでは、接続済みブラウザがTTL 1で別ピアへデータを転送できます。これは常設サーバーRelayではなく、どこにも経路がない2者を救うものではありません。</li>
+      <li><strong>転送効率:</strong> MessagePackを使い、大きな配列は有利な場合にgzip圧縮し、DataChannelへ分割して送ります。送受信キューもあります。</li>
+      <li><strong>端末内の保険:</strong> GM/PLのブラウザにルームZIP相当を自動保存し、起動時や一覧から世代復元できます。</li>
+    </ul>
+    <div class="warning"><strong>重要な限界:</strong> 端末内自動保存は中央の正本ではありません。通信分断でAとBに異なる状態が残った場合、どれを正しい状態として採用するかは運用判断が必要です。また画像・音声もP2P同期なので、大容量素材は各端末と回線へ負担をかけます。</div>
+  </section>
+
+  <section id="failure">
+    <h2>障害時の比較</h2>
+    <table>
+      <thead><tr><th>状況</th><th>Axeで期待される挙動</th><th>Lycoris Relayで期待される挙動</th><th>有利</th></tr></thead>
+      <tbody>
+        <tr><td>家庭回線同士、少人数</td><td>直接P2Pなら低遅延・VPS負荷小。失敗時はTURN</td><td>常にVPSを一往復</td><td>Axeの利点が出やすい</td></tr>
+        <tr><td>モバイル・厳しいNAT</td><td>TURN成立に依存。品質表示で判別可能</td><td>WSSでVPSへ到達できれば成立しやすい</td><td>Lycoris</td></tr>
+        <tr><td>短い回線断</td><td>無応答検知後、自動再接続。必要なら再同期</td><td>WebSocket再接続とサーバー状態から復旧</td><td>双方対応。実測が必要</td></tr>
+        <tr><td>30秒超の断線・スリープ</td><td>再接続、再同期、最終手段は再読込と端末内自動保存</td><td>再接続後にサーバー側スナップショットを基準にできる</td><td>Lycorisが決定的にしやすい</td></tr>
+        <tr><td>ホスト役が離脱</td><td>特定ホストだけを正本にしない。GM不在なら引継ぎ可能</td><td>サーバーが残れば部屋状態を維持</td><td>双方に利点</td></tr>
+        <tr><td>VPS停止</td><td>トークン発行・更新や新規参加に影響するが、卓データはVPS非依存</td><td>Relay全体が停止</td><td>Axe</td></tr>
+        <tr><td>SkyWay/TURN障害</td><td>新規・再接続やTURN利用者に影響。自前VPSだけでは解消不能</td><td>RelayモードならSkyWay非依存にできる</td><td>Lycoris</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="operation">
+    <h2>VPS・保守・プライバシー</h2>
+    <table>
+      <thead><tr><th>項目</th><th>Axe</th><th>Lycoris Relay</th></tr></thead>
+      <tbody>
+        <tr><td>VPS役割</td><td>静的フロントと小さなSkyWayトークンAPI</td><td>フロント、WebSocket Relay、状態・メディア保存</td></tr>
+        <tr><td>VPS費用</td><td>軽い。ただしTURN負荷はSkyWay側の条件・料金に関係する</td><td>同時接続、素材量、転送量に応じて自前VPS負荷が増える</td></tr>
+        <tr><td>秘密情報</td><td>SkyWay App ID / Secretをバックエンドだけに置く</td><td>サーバー設定、入口認証、保存データを守る</td></tr>
+        <tr><td>監視</td><td>API死活とSkyWay依存を監視。個々のP2P品質は各画面中心</td><td><code>/health</code>、<code>/api/status</code>、接続・Relay指標を集中監視可能</td></tr>
+        <tr><td>保守性</td><td>新しい依存と多数の自動試験。変更しやすいが更新頻度が非常に高い</td><td>使いたいRelay機能は既にあるが、古いAngular基盤の更新負債が大きい</td></tr>
+        <tr><td>データ保護</td><td>中央に卓データを集めない。各利用者のブラウザ保存を管理</td><td>VPSの保存期間、容量、バックアップ、削除、アクセス制御が必要</td></tr>
+      </tbody>
+    </table>
+    <p>Axeを採用しても「完全サーバーレス」ではありません。SkyWayとトークンAPIが必要です。また、自前VPSを用意しただけではTURNやP2P経路を直接制御できません。通信経路まで完全に自主管理したいなら、別途大きな通信改修が要ります。</p>
+  </section>
+
+  <section id="decision">
+    <h2>選定方針</h2>
+    <table>
+      <thead><tr><th>重視すること</th><th>現時点の優位候補</th><th>理由</th></tr></thead>
+      <tbody>
+        <tr><td>どの回線でも接続経路を単純にしたい</td><td><strong>Lycoris Relay</strong></td><td>ブラウザから自前VPSへのHTTPS/WSSに集約できる</td></tr>
+        <tr><td>切断後の中央状態からの復旧</td><td><strong>Lycoris Relay</strong></td><td>サーバーのスナップショット・イベントを復旧基準にできる</td></tr>
+        <tr><td>現在の機能・UI・ダークモード</td><td><strong>Axe</strong></td><td>欲しい機能の多くが既に統合されている</td></tr>
+        <tr><td>今後の改造・テスト・保守</td><td><strong>Axe</strong></td><td>現代的なAngular/TypeScriptと厚い自動試験基盤</td></tr>
+        <tr><td>VPS負荷を小さくする</td><td><strong>Axe</strong></td><td>卓データをVPSで中継・保存しない</td></tr>
+        <tr><td>通信を自分で監視・制御する</td><td><strong>Lycoris Relay</strong></td><td>通信と状態が自前サーバーへ集まる</td></tr>
+      </tbody>
+    </table>
+    <p><strong>総合ではAxeを本命候補へ引き上げます。</strong>ただし「最低限安定」の意味を、厳しい回線でも入室・再接続できることと定義するなら、採用条件として実回線試験を必須にします。Axeが条件を満たせば、アプリ本体の質と既存機能の多さからAxe採用が合理的です。満たせなければ、Lycoris Relayを採用するか、長期案としてAxeへ任意のWebSocket Relayを追加します。</p>
+    <div class="warning"><strong>移植コスト:</strong> Axeの機能をLycorisへ、またはLycoris RelayをAxeへ単純移植することはできません。両者はフレームワーク世代、状態同期、保存、通信の設計が大きく異なります。AxeへのRelay追加は独立した大規模機能として見積もるべきです。</div>
+  </section>
+
+  <section id="test-plan">
+    <h2>実回線テスト計画</h2>
+    <p>同じ2～4台、同じ素材、同じ操作をAxeとLycoris Relayで繰り返し、印象ではなく失敗率と復旧時間で決めます。</p>
+    <ol>
+      <li><strong>回線:</strong> 家庭回線同士、家庭＋スマートフォンテザリング、可能ならUDPを制限した回線を用意する。</li>
+      <li><strong>基本同期:</strong> 入室、チャット、ダイス、コマの連続移動、ステータス変更、カード、BGM、大きな画像の初回共有を試す。</li>
+      <li><strong>人数:</strong> 2人、3人、4人で、Axeの直接・TURN経路とRTT、LycorisのRelay状態を記録する。</li>
+      <li><strong>切断:</strong> 10秒、20秒、30秒以上の通信断、Wi-Fi切替、スリープ・復帰を行い、自動復旧時間と欠落を記録する。</li>
+      <li><strong>後入り:</strong> 卓を十分変更した後で新規参加し、画像を含む完全同期までの時間と状態一致を確認する。</li>
+      <li><strong>不一致復旧:</strong> Axeの「部屋のデータを同期し直す」、再接続、再読込、自動保存復元を順に試す。</li>
+      <li><strong>長時間:</strong> 実セッション相当の数時間接続し、再接続回数、メモリ、CPU、通信量、操作欠落を記録する。</li>
+    </ol>
+    <div class="decision"><strong>最低合格線の案:</strong> 全員が3回連続で入室できる、短い断線から自動復旧できる、復旧後にオブジェクト欠落がない、手動再同期で一致へ戻せる、4人卓で素材共有が実用時間内に終わること。厳しい回線でAxeだけ再現性のある失敗が出る場合はLycoris Relayを優先します。</div>
+  </section>
+
+  <section id="sources">
+    <h2>一次情報</h2>
+    <ul>
+      <li><a href="https://xelltis.github.io/udonarium_axe/">Udonarium Axe 公式ドキュメント</a></li>
+      <li><a href="https://xelltis.github.io/udonarium_axe/guide/features">Axe 機能一覧</a></li>
+      <li><a href="https://xelltis.github.io/udonarium_axe/manual/connection">Axe 接続が切れたとき</a></li>
+      <li><a href="https://xelltis.github.io/udonarium_axe/manual/save-load">Axe 保存と読み込み</a></li>
+      <li><a href="https://xelltis.github.io/udonarium_axe/manual/theme">Axe テーマ</a></li>
+      <li><a href="https://github.com/Xelltis/udonarium_axe">Udonarium Axe 公式リポジトリ</a> / <a href="https://github.com/Xelltis/udonarium_axe/releases/tag/v1.42.0">v1.42.0</a></li>
+      <li><a href="https://axe.xelltis.com/">Udonarium Axe 公開デモ</a></li>
+      <li><a href="https://github.com/oron1208/udonarium-lycoris">Udonarium Lycoris 公式リポジトリ</a></li>
+      <li><a href="LOCAL_VALIDATION_2026-08-20.html">本プロジェクトのLycorisローカル基準検証</a></li>
+    </ul>
+    <p class="meta">「確認」は一次資料・ソース・実画面で確認した事実、「評価」「推奨」は本プロジェクトの要件に照らした判断です。実際の異回線通信品質は、上記の比較試験を行うまで未確定です。</p>
+  </section>
+</main>
+</body>
+</html>

@@ -16,8 +16,8 @@
   </header>
 
   <div class="decision">
-    <strong>2026-08-20 方針更新:</strong> 改造ベースはUdonarium Lycoris v1.67.0へ変更しました。ユーザーフォーク作成、ローカル本番ビルド、統合サーバー、WebSocketリレーの2クライアント中継まで確認済みです。
-    最新の作業状態は<a href="LOCAL_VALIDATION_2026-08-20.html">ローカル基準検証</a>、比較根拠は<a href="UDONARIUM_VARIANT_RESEARCH.html">派生版・通信方式 調査報告</a>を参照してください。以下に残る「本家をベース」とする旧記述より、この方針更新を優先します。
+    <strong>2026-08-25 方針更新:</strong> Udonarium Axe v1.42.0を新たな本命候補へ加え、ベース選定を再度開きました。アプリ全体と保守基盤ではAxe、異回線での経路予測性と中央復旧ではLycoris WebSocket Relayが優位です。Lycorisのフォーク、ローカル本番ビルド、統合サーバー、2クライアント中継は引き続き比較基準として有効です。
+    最新の比較は<a href="UDONARIUM_AXE_COMPARISON_2026-08-25.html">Axe・Lycoris比較調査</a>、Lycorisの作業状態は<a href="LOCAL_VALIDATION_2026-08-20.html">ローカル基準検証</a>、他派生版を含む調査は<a href="UDONARIUM_VARIANT_RESEARCH.html">派生版・通信方式 調査報告</a>を参照してください。以下に残る旧方針より、この更新を優先します。
   </div>
 
   <nav aria-label="目次">
@@ -39,7 +39,7 @@
   <section id="objective">
     <h2>目的と確定事項</h2>
     <div class="decision">
-      <strong>目的:</strong> Udonarium Lycorisを基準に、ダークモードとチャット自動読み上げを追加した仲間内向け派生版を作る。<br>
+      <strong>目的:</strong> AxeまたはLycorisを基準に、安定した通信とチャット自動読み上げを備えた仲間内向け派生版を作る。Axe採用時は標準ダークテーマを活用する。<br>
       <strong>開発場所:</strong> <code>D:\Projects\Synchro\2026\Udonarium_syn</code><br>
       <strong>公開予定:</strong> <code>https://udonarium.synwork.work/</code><br>
       <strong>公開範囲:</strong> インターネットから接続可能だが、検索登録・宣伝は行わない。

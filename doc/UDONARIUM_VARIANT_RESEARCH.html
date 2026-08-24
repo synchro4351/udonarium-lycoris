@@ -10,9 +10,9 @@
 <body>
 <main>
   <header>
-    <p class="meta">調査開始: 2026-08-19 / 最終更新: 2026-08-20 / 対象: Udonarium Syn</p>
+    <p class="meta">調査開始: 2026-08-19 / 最終更新: 2026-08-25 / 対象: Udonarium Syn</p>
     <h1>ユドナリウム派生版・通信方式 調査報告</h1>
-    <p class="lead">ユドナリウムリコリス、ユドナリウムPlus、Udonite、本家Udonariumを、機能、改造ベースとしての扱いやすさ、VPS運用、通信安定性の観点で比較した初回調査です。</p>
+    <p class="lead">Udonarium Axe、ユドナリウムリコリス、ユドナリウムPlus、Udonite、本家Udonariumを、機能、改造ベースとしての扱いやすさ、VPS運用、通信安定性の観点で比較します。</p>
   </header>
 
   <nav aria-label="目次">
@@ -21,6 +21,7 @@
       <li><a href="#summary">要約と暫定判断</a></li>
       <li><a href="#premise">引き継ぎ資料からの前提</a></li>
       <li><a href="#comparison">候補比較</a></li>
+      <li><a href="#axe">Udonarium Axe</a></li>
       <li><a href="#lycoris">ユドナリウムリコリス</a></li>
       <li><a href="#plus">ユドナリウムPlus</a></li>
       <li><a href="#udonite">Udonite</a></li>
@@ -35,12 +36,14 @@
   <section id="summary">
     <h2>要約と暫定判断</h2>
     <div class="decision">
-      <strong>暫定の第一候補:</strong> ユドナリウムリコリス<br>
-      <strong>位置づけ:</strong> 採用確定ではなく、コード監査・ビルド・互換性・負荷試験へ進める第一候補<br>
-      <strong>通信の努力目標:</strong> リコリスのWebSocket Relayを活用し、P2P固有の接続失敗を減らす<br>
+      <strong>2026-08-25更新:</strong> Udonarium Axeを新たな本命候補へ引き上げ、ベース選定を再度開く<br>
+      <strong>アプリ全体の候補:</strong> Axe。現代的な実装、多機能、標準ダークテーマが強い<br>
+      <strong>通信安定性の基準:</strong> Lycoris WebSocket Relay。自前VPSへ経路と復旧状態を集約できる<br>
+      <strong>確定方法:</strong> Axe P2PとLycoris Relayを同一の異回線条件で実測する<br>
       <strong>参考候補:</strong> Plusは機能選択UI、UdoniteはClient/Server化の設計を参考にする
     </div>
-    <p>リコリスは照明、戦闘管理、VNモード、ジュークボックス等の多機能さに加え、2026年7月以降に通信基盤を大きく改修しています。WebSocket Relay、サーバー保存、再接続、接続品質表示、画像・音声のサーバー配信を既に備えるため、今回の目的と最も一致します。</p>
+    <p>AxeはAngular 22 / TypeScript 6を使った現代的な実装で、照明・視界、エフェクト、外部キャラ取込、モバイルUI、リプレイ、ブラウザ内自動保存、ダークテーマまで統合しています。通信はSkyWay SDK v2のWebRTC P2Pですが、TURN、自動再接続、接続品質表示、手動再同期を備えています。一方、リコリスはWebSocket Relay、サーバー保存、再接続、画像・音声のサーバー配信を備え、厳しい回線で接続経路を予測しやすい点が優位です。</p>
+    <p>詳細は<a href="UDONARIUM_AXE_COMPARISON_2026-08-25.html">Axe・Lycoris比較調査</a>を参照してください。</p>
     <p>ただし、開発の新しさは利点であると同時にリスクです。公開リポジトリの最新確認コミットは2026-08-03のv1.67.0で、公式サイトの更新履歴v1.66より先行していました。通信サーバーは機能豊富ですが、認証、権限制御、レート制限、状態保存の堅牢性は本番利用前に補強が必要です。</p>
     <div class="warning"><strong>重要:</strong> 旧引き継ぎ資料の「本家をベースに確定」という結論は、当時の「ダークモードと読み上げだけを小さく追加する」前提に基づきます。多機能版と通信安定化を重視する今回の方針では、ベース選定を再度開いて比較する必要があります。</div>
   </section>
@@ -64,6 +67,13 @@
         <tr><th>候補</th><th>主な性格</th><th>通信</th><th>保守・権利</th><th>現時点の位置づけ</th></tr>
       </thead>
       <tbody>
+        <tr>
+          <td><strong>Udonarium Axe</strong></td>
+          <td>現代的な大規模再実装。高度な照明・視界、演出、リプレイ、自動保存、標準ダークテーマ。</td>
+          <td>SkyWay SDK v2のWebRTC P2P。TURN、自動再接続、品質表示、再同期を実装。</td>
+          <td>MIT。Angular 22 / TypeScript 6、多数のユニット・E2Eテスト。</td>
+          <td><span class="status-good">新たな本命候補</span>。異回線試験で通信の最低合格線を確認する。</td>
+        </tr>
         <tr>
           <td>本家Udonarium</td>
           <td>構成が比較的小さく、上流追従とPull Requestに向く。</td>
@@ -94,6 +104,13 @@
         </tr>
       </tbody>
     </table>
+  </section>
+
+  <section id="axe">
+    <h2>Udonarium Axe</h2>
+    <p>2026-08-25にv1.42.0を調査しました。公開デモの初期画面、公式資料、公式リポジトリのソースを確認しています。ダーク・ライト・OS連動テーマ、GM/PL/観戦者ロール、照明・視界、六角グリッド、外部キャラ取込、演出、リプレイ、モバイルUIなど、今回ほしい機能の多くが既に一体化されています。</p>
+    <p>卓データはWebRTCでブラウザ間に同期し、バックエンドはSkyWayトークンの発行だけを担当します。直接接続できない場合はTURNを使い、無応答検知、自動再接続、相手別RTT・経路表示、部屋データの再同期、各ブラウザへの自動保存もあります。ただし、Lycoris Relayのようなサーバー上の部屋正本はなく、SkyWay/TURNや各参加者の回線条件への依存は残ります。</p>
+    <div class="decision"><strong>位置づけ:</strong> アプリとコード基盤では第一候補になり得ます。通信については推測で決めず、Lycoris Relayと同一条件で比較して採否を決めます。詳細は<a href="UDONARIUM_AXE_COMPARISON_2026-08-25.html">専用比較報告</a>を参照してください。</div>
   </section>
 
   <section id="lycoris">
@@ -199,25 +216,25 @@ Udonite Server（Node.js）
   <section id="recommendation">
     <h2>推奨方針</h2>
     <ol>
-      <li>リコリスを第一候補として、まず無改造版を隔離したローカル環境で再現する。</li>
-      <li>本家ベース案は捨てず、比較対照として残す。リコリスの保守負担が許容できない場合の安全な戻り先にする。</li>
+      <li>Axeを本命候補、動作確認済みのリコリスRelayを通信安定性の比較基準として、同一条件で異回線試験する。</li>
+      <li>Axeが通信の最低合格線を満たせば、機能、標準ダークテーマ、保守基盤を評価してAxeを優先する。</li>
+      <li>Axeに再現性のある接続失敗が残る場合は、リコリスRelayを採用するか、Axeへの任意Relay追加を大規模機能として別途検討する。</li>
       <li>Plusは機能一覧と選択UIを要件整理に使い、ソース・ライセンスが明らかになるまでコードを取り込まない。</li>
       <li>UdoniteはSocket.IO、永続化、画像分離の設計を参考にするが、直接ベースにはしない。</li>
-      <li>通信改善は「新方式をゼロから作る」のではなく、まずリコリスRelayを安全に運用できる形へ補強する。</li>
     </ol>
-    <div class="decision"><strong>採用確定条件:</strong> ビルド成功、主要操作成功、既存ZIP互換、2～4人の別回線接続、再接続・長時間接続、VPS負荷、保存・復旧、セキュリティ最低要件を満たした時点でリコリス採用を確定します。</div>
+    <div class="decision"><strong>採用確定条件:</strong> ビルド成功、主要操作成功、既存ZIP互換、2～4人の別回線接続、再接続・長時間接続、素材同期、保存・復旧、セキュリティ最低要件を満たし、AxeとLycorisの実測を比較した時点で確定します。</div>
   </section>
 
   <section id="next">
     <h2>次の調査・検証</h2>
     <ol>
-      <li>リコリスv1.67.0を固定し、依存導入・テスト・本番ビルドを実行する。</li>
-      <li>Dockerをローカルで起動し、Relayで2ブラウザ接続、部屋再入室、サーバー再起動後の復旧を確認する。</li>
-      <li>本家・リリィ・リコリスのサンプルZIPを相互に読み込み、基本データと独自データを表にする。</li>
-      <li>Chrome/Firefox、通常回線/テザリング等でP2PとRelayを比較する。</li>
+      <li>Axe v1.42.0を固定し、依存導入、ユニットテスト、lint、本番ビルド、E2Eを実行する。</li>
+      <li>Axe用SkyWayトークンAPIをローカルに用意し、2ブラウザ間の基本同期と復旧操作を確認する。</li>
+      <li>本家・リリィ・リコリス・AxeのサンプルZIPを相互に読み込み、基本データと独自データを表にする。</li>
+      <li>Chrome/Firefox、通常回線/テザリング/UDP制限等でAxe P2PとLycoris Relayを比較する。</li>
       <li>大きな画像、音声、500～2000オブジェクト、連続操作でCPU・メモリ・帯域・保存時間を測る。</li>
-      <li>認証、ルーム認可、API公開範囲、レート制限、バックアップ、ログの修正案を作る。</li>
-      <li>ダークモードと読み上げが既存UI・チャット処理へ追加可能か、リコリス上で差分設計する。</li>
+      <li>AxeのトークンAPIとLycoris Relayについて、認証、API公開範囲、レート制限、バックアップ、ログを比較する。</li>
+      <li>チャット読み上げの差分設計を両候補で比較する。Axeでは既存ダークテーマをそのまま利用する。</li>
     </ol>
   </section>
 
@@ -225,6 +242,7 @@ Udonite Server（Node.js）
     <h2>一次情報</h2>
     <ul>
       <li><a href="https://github.com/TK11235/udonarium">本家Udonarium</a> / <a href="https://github.com/TK11235/udonarium/releases">Releases</a></li>
+      <li><a href="https://github.com/Xelltis/udonarium_axe">Udonarium Axe GitHub</a> / <a href="https://xelltis.github.io/udonarium_axe/">公式ドキュメント</a> / <a href="UDONARIUM_AXE_COMPARISON_2026-08-25.html">Axe・Lycoris比較調査</a></li>
       <li><a href="https://github.com/oron1208/udonarium-lycoris">Udonarium Lycoris GitHub</a> / <a href="https://udonarium-lycoris.ddns.net/docs/">公式ドキュメント・更新履歴</a></li>
       <li><a href="https://create-now.vercel.app/tyrano/udon-lily">ユドナリウムPlus設定ページ</a></li>
       <li><a href="https://github.com/NanasuNANA/UdonariumWithFly">Udonarium with Fly</a></li>
