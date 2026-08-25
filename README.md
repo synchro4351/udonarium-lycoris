@@ -4,6 +4,8 @@
 
 # 🌺 ユドナリウムリコリス
 
+> **Udonarium_syn ローカル運用メモ:** このGitルートは現在、Lycoris基準実装です。Axe・HKTRPG等の比較候補、共通検証、一時調査の配置規則は [`doc/WORKSPACE_LAYOUT.html`](doc/WORKSPACE_LAYOUT.html) を参照してください。
+
 **Udonarium Lycoris** — ブラウザだけで、どこでもTRPGを。
 
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/oron1208/udonarium-lycoris/blob/master/LICENSE)

@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>ローカル構成・作業ルール</title>
+  <link rel="stylesheet" href="assets/document.css">
+</head>
+<body>
+<main>
+  <header>
+    <p class="meta">制定日: 2026-08-25 / 対象: Udonarium_syn ローカル開発環境</p>
+    <h1>ローカル構成・作業ルール</h1>
+    <p class="lead">派生版のソース、比較調査、共通検証、一時ファイルを混在させず、候補のGit履歴と上流追従を壊さないための配置規則です。</p>
+  </header>
+
+  <nav aria-label="目次">
+    <h2>目次</h2>
+    <ol class="toc">
+      <li><a href="#decision">現在の判断</a></li>
+      <li><a href="#layout">標準構成</a></li>
+      <li><a href="#roles">各領域の責務</a></li>
+      <li><a href="#workflow">候補検証の流れ</a></li>
+      <li><a href="#git">Gitルール</a></li>
+      <li><a href="#data">データ・秘密情報</a></li>
+      <li><a href="#naming">命名規則</a></li>
+      <li><a href="#promotion">正式採用時の移行</a></li>
+    </ol>
+  </nav>
+
+  <section id="decision">
+    <h2>現在の判断</h2>
+    <div class="decision">
+      <strong>このルートは当面、LycorisフォークのGit作業ツリーとして維持します。</strong><br>
+      AxeやHKTRPGのソースをルートへ重ねず、<code>candidates/</code>以下の独立リポジトリとして検証します。<br>
+      正式採用後に、採用版を新しい主リポジトリへ昇格させます。
+    </div>
+    <p>現在の<code>D:\Projects\Synchro\2026\Udonarium_syn</code>は、<code>synchro4351/udonarium-lycoris</code>を<code>origin</code>、作者版を<code>upstream</code>とするLycorisフォークです。Angularアプリ、Relayサーバー、ビルド定義、Git履歴がルート基準で構成されています。</p>
+    <p>この状態でアプリ本体を<code>repos/lycoris/</code>などへ移すと、Angular設定、Docker、スクリプト、上流差分、既存ブランチが一度に変わります。採用候補が未確定の段階では、その移動リスクに見合う利点がありません。</p>
+    <div class="warning"><strong>注意:</strong> ルートに既にある<code>research/</code>はLycoris上流の一部です。本プロジェクトの調査資料置場として使いません。本プロジェクトの文章は<code>doc/</code>へ置きます。</div>
+  </section>
+
+  <section id="layout">
+    <h2>標準構成</h2>
+    <pre><code>Udonarium_syn/                 現在のLycoris基準実装・Gitルート
+├─ src/                       Lycorisアプリ本体
+├─ signaling-server/          Lycoris通信サーバー
+├─ doc/                       本プロジェクトの調査・判断・引き継ぎ
+├─ candidates/                比較候補の独立クローン（候補本体はGit管理外）
+│  ├─ README.md
+│  ├─ axe/                    将来のAxeクローン
+│  └─ hktrpg/                 将来のHKTRPGクローン
+├─ validation/                候補共通の検証計画・補助物
+│  ├─ README.md
+│  ├─ plans/                  チェックリスト、合格基準
+│  ├─ scripts/                候補横断の検証補助
+│  ├─ fixtures/
+│  │  ├─ public/              Git登録可能な小さなテストデータ
+│  │  └─ private/             実卓データ等。Git管理外
+│  ├─ artifacts/              ログ・画像・計測結果。Git管理外
+│  └─ runtime/                一時設定・PID等。Git管理外
+└─ .work/                     使い捨て調査。ディレクトリごと削除可能</code></pre>
+  </section>
+
+  <section id="roles">
+    <h2>各領域の責務</h2>
+    <table>
+      <thead><tr><th>場所</th><th>置くもの</th><th>置かないもの</th><th>Git</th></tr></thead>
+      <tbody>
+        <tr><td>ルート・<code>src/</code></td><td>現在のLycoris実装</td><td>Axe/HKTRPGのコピー、調査用JSON</td><td>Lycorisフォークで管理</td></tr>
+        <tr><td><code>doc/</code></td><td>調査報告、設計判断、引き継ぎ、検証要約</td><td>依存パッケージ、実行ログ、大容量画像</td><td>管理する</td></tr>
+        <tr><td><code>candidates/</code></td><td>採用候補の完全に独立したクローン</td><td>一時的な数分の調査クローン</td><td>候補自身のGitのみ。親では無視</td></tr>
+        <tr><td><code>validation/</code></td><td>候補横断の計画、スクリプト、小さな公開fixture</td><td>候補固有ソース、秘密素材</td><td>安全な共通物だけ管理</td></tr>
+        <tr><td><code>.work/</code></td><td>浅いクローン、API結果、比較用展開物</td><td>唯一の原本、長期保存する結果</td><td>すべて無視</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="workflow">
+    <h2>候補検証の流れ</h2>
+    <ol>
+      <li><strong>調査:</strong> 数分～数時間だけ読む場合は<code>.work/&lt;候補名&gt;/</code>へ浅くcloneし、終了時に削除します。</li>
+      <li><strong>候補化:</strong> ビルドや複数回の検証へ進める候補だけを<code>candidates/&lt;候補名&gt;/</code>へ正式cloneします。</li>
+      <li><strong>固定:</strong> 検証開始時のコミットID、バージョン、取得日を<code>doc/</code>の検証記録へ残します。</li>
+      <li><strong>候補内検証:</strong> 依存導入、build、unit、E2Eは候補自身のディレクトリで実行します。</li>
+      <li><strong>共通試験:</strong> 同じfixtureと合格基準を<code>validation/</code>から各候補へ適用します。</li>
+      <li><strong>結果保存:</strong> 要約と判断は<code>doc/</code>、生ログ等は<code>validation/artifacts/</code>へ分けます。</li>
+      <li><strong>採否:</strong> 不採用候補はコミットIDと結果を資料に残してcloneを削除できます。</li>
+    </ol>
+  </section>
+
+  <section id="git">
+    <h2>Gitルール</h2>
+    <ul>
+      <li>候補リポジトリを親リポジトリへsubmoduleとして登録しません。採用前はローカル比較物です。</li>
+      <li>候補の<code>.git</code>、<code>node_modules</code>、<code>dist</code>を親側から追加しません。</li>
+      <li>候補ごとに<code>origin</code>を自分のfork、<code>upstream</code>を作者版に統一します。fork前は<code>origin</code>だけでも構いません。</li>
+      <li>作者の既定ブランチへ直接コミットせず、ローカル検証ブランチを作ります。</li>
+      <li>比較のための修正と、上流へ返せる一般修正を同じコミットに混ぜません。</li>
+      <li>親の<code>git status</code>が候補の生成物で汚れないことを、各作業の終了時に確認します。</li>
+    </ul>
+  </section>
+
+  <section id="data">
+    <h2>データ・秘密情報</h2>
+    <ul>
+      <li>SkyWay Secret、トークン、パスワード、証明書、実URLの認証情報はGitへ登録しません。</li>
+      <li>実卓のZIP、立ち絵、音声、ログは<code>validation/fixtures/private/</code>またはワークスペース外へ置きます。</li>
+      <li>公開fixtureには自作の小さな画像・音声・ダミーキャラクターだけを使用します。</li>
+      <li>生ログは個人名、ルーム名、IP相当情報、招待URLを確認してから共有します。</li>
+      <li><code>validation/artifacts/</code>は成果物の原本置場ではありません。重要な判断は必ず<code>doc/</code>へ要約します。</li>
+    </ul>
+  </section>
+
+  <section id="naming">
+    <h2>命名規則</h2>
+    <table>
+      <thead><tr><th>対象</th><th>規則</th><th>例</th></tr></thead>
+      <tbody>
+        <tr><td>候補ディレクトリ</td><td>小文字の短い固定名</td><td><code>axe</code>、<code>hktrpg</code></td></tr>
+        <tr><td>一時作業</td><td><code>.work/&lt;目的&gt;-YYYY-MM-DD</code></td><td><code>.work/fork-scan-2026-08-25</code></td></tr>
+        <tr><td>調査・検証資料</td><td>主題と日付を含む大文字スネークケース</td><td><code>AXE_LOCAL_VALIDATION_2026-08-26.html</code></td></tr>
+        <tr><td>検証成果物</td><td>日付、候補、試験名</td><td><code>2026-08-26_axe_build.log</code></td></tr>
+        <tr><td>ポート</td><td>候補ごとに固定し記録</td><td>Lycoris 12081、Axe 14200、HKTRPG 14300等</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="promotion">
+    <h2>正式採用時の移行</h2>
+    <p>候補決定後は、採用版のリポジトリを正式な開発ルートにします。現在のLycorisルートへ別候補のファイルを上書きコピーしません。</p>
+    <ol>
+      <li>採用版のユーザーフォークと正式ブランチを確定する。</li>
+      <li>現在の調査資料・検証計画を保存し、コミットIDを記録する。</li>
+      <li>新しい正式作業ディレクトリを用意し、採用版を通常cloneする。</li>
+      <li><code>doc/</code>と共通<code>validation/</code>の扱いを、新リポジトリへ移すか別管理にするか決める。</li>
+      <li>旧Lycoris作業ツリーは比較基準として読み取り専用で残すか、バックアップ後に削除する。</li>
+      <li>VPS側のCompose・Caddyは採用版の起動方式が確定するまで変更しない。</li>
+    </ol>
+    <div class="warning"><strong>移行は別作業:</strong> フォルダ名変更、Gitルート移動、リモート切替、旧clone削除は採用確定後に対象を再確認して行います。今回の整理では実施しません。</div>
+  </section>
+</main>
+</body>
+</html>
